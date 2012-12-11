@@ -3,8 +3,6 @@ mir-noise
 
 Repository for MIR Final Project
 
-
-
 File Structure:
 /			<= All top level code (main, plotting, etc.) goes here
 mirlib			<= All useful code goes here.
@@ -27,3 +25,8 @@ mirlib/feature_analysis <= Modules related to feature analysis
 --kmeans.py		<= Methods for handling k-means
 
 mirlib_test		<= Unit testing and normal testing for mirlib
+
+
+Package Dependencies - You must install these to run this!
+* numpy		     http://numpy.scipy.org/
+* scipy		     http://www.scipy.org/Installing_SciPy
