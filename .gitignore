@@ -36,3 +36,4 @@ nosetests.xml
 
 # Audio
 audio/
+segments/
