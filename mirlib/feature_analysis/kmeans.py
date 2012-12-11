@@ -46,7 +46,7 @@ class kmeans_runner:
 
     def iterate(self):
 
-        self.UpdateCentroids()
+        self.UpdateCentroids_Offline()
         self.itr_count += 1
 
         if (self.update_changes < self.end_thresh).all():
@@ -57,7 +57,7 @@ class kmeans_runner:
         centroid_update = np.zeros(self.centroids.shape)
 
         for i in range(self.k_classes):
-            centroid_update[i] = np.mean( self.data[(nearest_centroid == i).nonzero()] )
+            centroid_update[i] = np.mean( self.data[(nearest_centroids == i).nonzero()] )
 
         self.update_changes = centroid_update - self.centroids
         self.centroids = self.centroids + self.update_changes * self.update_factor
