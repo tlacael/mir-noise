@@ -43,7 +43,7 @@ def Cepstrum(X, cepstrumParams):
     ''' Take the Cepstrum of X, return the matrix of Cepstrum coeficients. '''
     pass
 
-def MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams, nIndexSkip=0):
+def MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams):
     ''' Take the MFCC of X, return the matrix of Cepstrum coeficients. 
     X is the 2d spectrogram (FFT frames)
     '''
@@ -62,9 +62,14 @@ def MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams, nIndexSkip=0):
 
     # Multilpy the Mel Spectrogram by the DCT Matrix to get the MFCC
     mfcc = melSpect.dot(dctMatrix.T)
-
-    # Remove the end of the mfcc to clear up the data before normalizing
-    #mir_utils.PrintDataStats(mfcc)
-    mfcc_norm = mir_utils.Normalize(mfcc[:, nIndexSkip:])
     
-    return mfcc_norm, dctMatrix
+    return mfcc
+
+def MFCC_Normalized(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams, nIndexSkip=0):
+    
+    mfcc = MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams, nIndexSkip)
+    
+    # Remove the end of the mfcc to clear up the data before normalizing
+    mfcc_norm = mir_utils.Normalize(mfcc[:, nIndexSkip:])
+
+    return mfcc_norm
