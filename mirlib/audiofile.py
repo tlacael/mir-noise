@@ -32,7 +32,7 @@ class audiofile_manager:
     def GetNextSegment(self):
         segment = self.afReader.read_frame_at_index(self.index * self.seg_length_samps, self.seg_length_samps)
         self.index += 1
-        return segment, self.index
+        return segment, (self.index - 1)
 
 
 def segment_audio_files(filepath, segment_length, result_dir=RESULT_DIR):
