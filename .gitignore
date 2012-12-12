@@ -38,3 +38,7 @@ nosetests.xml
 audio/
 segments/
 *.wav
+
+
+# features
+*.npy
