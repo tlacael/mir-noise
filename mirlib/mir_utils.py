@@ -50,16 +50,7 @@ def HalfWaveRectify(x):
 
 def Normalize(x):
     ''' Returns x - min(x) / max(x - min(x)) '''
-    res = np.zeros(x.shape)
-    if x.ndim == 1:
-        minzero = x - x.min()
-        res = minzero / np.float(minzero.max())
-    else:
-        for i in range(len(x)):
-            minzero = x[i] - x[i].min()
-            res[i] = minzero / np.float(minzero.max())
-    return res
-            
+    return (x - x.min(axis=0)) / np.asarray( (x - x.min(axis=0)).max(axis=0), dtype=float )
 
 def PrintDataStats(data, title=''):
     dim = data.ndim
