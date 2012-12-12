@@ -105,20 +105,22 @@ class onsetDetect:
         
         self.peakTimes = nonzero
         
-    def findLenofEvent(self):
+    def findEventLocations(self):
         #set 2 second window for strong smoothing
-        winLen = self.fs * 2
+        winLen = 4096
         hopSize = winLen
         
-        EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
+        EnvSmooth = self.envelopeFollow(winLen, hopSize)
         #normalize
-        EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
-        thresh = mean(EnvSmooth)
+        self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
+        #thresh = mean(EnvSmooth)
         
-        EnvSmooth[EnvSmooth<thresh]=0
+        EnvThresh = self.EnvSmooth
+        thresh = mean(EnvThresh)*0.75
         
+        EnvThresh[EnvThresh<thresh]=0
         
-        EventCenters = np.nonzero(EnvSmooth)
+        EventCenters = np.nonzero(EnvThresh)
         EventCenters = np.array((EventCenters))
         
         self.cents = EventCenters
@@ -131,29 +133,33 @@ class onsetDetect:
         
         #convert event centers to time windows in seconds
         
-        widen = 1 #amount to pad window on either side of event, in seconds
+        widen = 3 #amount to pad window on either side of event, in seconds
         for i in eventIndex:
             EventTimes[i,0] = (EventCenters[0,i] - 0.5)*winLen/float(self.fs)-widen
             EventTimes[i,1] = (EventCenters[0,i] + 0.5)*winLen/float(self.fs)+widen
-            
+        
+        EventTimes[EventTimes<0]=0
         self.EventTimes = EventTimes
         
-        reducedEvents = zeros((self.numberOfEvents,2))
+        
+        
         #reduce number of segments i.e. overlaps, nearby
+        reducedEvents = zeros((self.numberOfEvents,2))
         temp = EventTimes
         
         offset =0;
+        timeThresh = 3 #in seconds
         for i in eventIndex:
             
             reducedEvents[i-offset,0] = temp[i,0]
             
+            
+            
             if i < eventIndex[-1]:
-                if (temp[i+1,0] - temp[i,1]) < 2:
+                if (temp[i+1,0] - temp[i,1]) < timeThresh:
                     reducedEvents[i-offset,1] = temp[i+1,1]
                     temp[i+1,:] = reducedEvents[i-offset,:]
                     offset +=1
-                    
-                    
                 else:
                     reducedEvents[i-offset,1] = temp[i,1]
               
@@ -161,8 +167,7 @@ class onsetDetect:
         self.numberOfEvents = size(self.reducedEvents,0)  
             
         return self.reducedEvents
-                
-        
+       
         
         
 ''' Test script
@@ -172,17 +177,45 @@ class onsetDetect:
 [x, fs] = M.wavread('wburgShort.wav')
 
 
-
-winLen = fs*2
+run eventDetect.py
+#look at segment extraction plot
+winLen = fs*1
 hopSize = winLen 
 
+
+run eventDetect.py
 z = onsetDetect(x, fs)
+
+
+events = z.findEventLocations()
+
+events = multiply(events,fs)
+
+hop = 40
+timeX = arange(z.x.size)
+timeX.shape = z.x.shape
+timeX = divide(timeX, float(fs))
+timeX.shape = z.x.shape
+plot(timeX[::hop], z.x[::hop], color='r')
+
+eventPlot = zeros(size(timeX))
+for i in range(size(events,0)):
+    eventPlot[events[i,0]:events[i,1]]=0.7
+    
+plot(timeX[::hop],eventPlot[::hop]);show()
+
+'''
+
+
+'''
+
+
 #y = z.envelopeFollow(winLen, hopSize)
 y = z.envelopeFollowEnergy(winLen, hopSize)
 timeX = arange(z.x.size)
 timeX.shape = z.x.shape
-timeX[::40] = divide(timeX[::40], fs)
-timeX[::40].shape = z.x[::40].shape
+timeX = divide(timeX, float(fs))
+timeX.shape = z.x.shape
 plot(timeX[::40], z.x[::40], color='r')
 
 y= divide(y,y.max())

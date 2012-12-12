@@ -9,7 +9,7 @@
 
 import scipy.io.wavfile as wvio
 import numpy as np
-from windowmanager import WindowManager
+from ..windowmanager import WindowManager
 from scipy import *
 from mir_utils import *
 

@@ -2,7 +2,7 @@ import numpy as np
 from numpy import vstack, array
 from numpy.random import rand
 from mirlib.feature_analysis import kmeans
-from matplotlib.pylab import ion, figure, draw, ioff, show, plot
+#from matplotlib.pylab import ion, figure, draw, ioff, show, plot
 import time
 
 import argparse
