@@ -65,18 +65,18 @@ def getfeatures(args):
         for i in np.arange(np.size(segmentTimes,0)):
             segments.append(audioChunk[segmentTimesSamps[i,0]:segmentTimesSamps[i,1]])
             
-            print "Event Detected:", segmentTimes[i,0],segmentTimes[i,1],len(segments[i])
+            print "Event Detected. Start: %0.2fs, End: %0.2fs, Length: %d samps" % (segmentTimes[i,0],segmentTimes[i,1],len(segments[i]))
 
         # 3. Get the MFCCs for each segment / event
-        #  for i in np.arange(segmentTimes.size,0):
-        #MFCC
+        '''for i in np.arange(len(segmentTimes)):
+            X = M.spectrogram(segments[i], N, N / hopDenom, winfunc(N))
+            spect_fs = fs / (N / hopDenom)
         
-        '''X = M.spectrogram(audioChunk, N, N / hopDenom, winfunc(N))
-        spect_fs = fs / (N / hopDenom)
-        
-        #   Not normalized, 'cause we need to do that over all time.
-        mfcc = llspect.MFCC(X, nFilters, nDCTCoefs, minFreq, maxFreq, fftParams)
-        featureDict[index] = mfcc'''
+            mfcc = llspect.MFCC_Normalized(X, nFilters, nDCTCoefs, minFreq, maxFreq, fftParams)
+            #print mfcc.shape
+            #print mfcc
+            ##featureDict[index] = mfcc
+        '''
 
         # 4. Time-average for each segment / event
         #time_averaged_mfcc = mir_utils.AverageFeaturesInTime(mfcc, spect_fs, seglen)
@@ -92,8 +92,6 @@ def getfeatures(args):
         mfccResult = np.concatenate([mfccResult, featureDict[i]])
         i += 1
 
-    mfcc_norm = mir_utils.Normalize(mfccResult[:, nIndexSkip:])
-    
     from matplotlib.pylab import *
     figure()
     imshow(mfcc_norm.T, interpolation='nearest', origin='lower', aspect='auto')

@@ -67,7 +67,7 @@ def MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams):
 
 def MFCC_Normalized(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams, nIndexSkip=0):
     
-    mfcc = MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams, nIndexSkip)
+    mfcc = MFCC(X, nFilters, dctWindowSize, minFreq, maxFreq, fftParams)
     
     # Remove the end of the mfcc to clear up the data before normalizing
     mfcc_norm = mir_utils.Normalize(mfcc[:, nIndexSkip:])
