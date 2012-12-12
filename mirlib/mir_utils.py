@@ -49,8 +49,11 @@ def HalfWaveRectify(x):
 	return (x + np.absolute(f)) / 2
 
 def Normalize(x):
-    ''' Returns x - min(x) / max(x - min(x)) '''
-    return (x - x.min(axis=0)) / np.asarray( (x - x.min(axis=0)).max(axis=0), dtype=float )
+    ''' Returns x - min(x) / max(x - min(x)), operating in the last dimension '''
+    ax = np.asarray(x, dtype=float)
+    opAxis = len(ax.shape) - 1
+    x_m = (ax.T - ax.min(axis=opAxis)).T
+    return (x_m.T / (x_m).max(axis=opAxis)).T
 
 def PrintDataStats(data, title=''):
     dim = data.ndim

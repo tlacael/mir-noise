@@ -21,6 +21,7 @@ def getfeatures(args):
     audio_seg = args.audio_seg_length
 
     afm = af.audiofile_manager(filepath, audio_seg)
+    fs = afm.afReader.samplerate()
 
     # FFT Parameters
     fs = afm.afReader.samplerate()
@@ -40,9 +41,9 @@ def getfeatures(args):
 
     # Feature Vector parameters
     # Template : ('name', order index, length)
-    vector_template = [(0, 'sones', 1),
-                        (1, 'mfcc', nDCTCoefs)]
-    feature_holder = featurevector.featurevetor_holder(vector_template)
+    vector_template = [('sones', 0, 1),
+                        ('mfcc', 1, nDCTCoefs)]
+    feature_holder = featurevector.featurevector_holder(vector_template)
     
     print "Feature Extraction Mode"
     # For each chunk of audio
@@ -54,34 +55,28 @@ def getfeatures(args):
 
         print "Read %d sample chunk of audio" % (len(audioChunk))
         
-        fs = afm.afReader.samplerate()
-
-
         # 1. Get Onsets
- 
         s = ed.onsetDetect(audioChunk,fs)
         
-        # 2. Get Segments from those offsets
+        # 2. Get Time-Segments from those offsets
         segmentTimes = s.findEventLocations()
-        print segmentTimes
-        segmentTimes = np.asarray(np.multiply(segmentTimes,fs),dtype=int)
-        print segmentTimes
+        segmentTimesSamps = np.asarray(np.multiply(segmentTimes,fs),dtype=int)
         segments = []
         for i in np.arange(np.size(segmentTimes,0)):
-            segments.append(audioChunk[segmentTimes[i,0]:segmentTimes[i,1]])
+            segments.append(audioChunk[segmentTimesSamps[i,0]:segmentTimesSamps[i,1]])
             
-            print segmentTimes[i,0],segmentTimes[i,1],len(segments[i])
+            print "Event Detected:", segmentTimes[i,0],segmentTimes[i,1],len(segments[i])
 
         # 3. Get the MFCCs for each segment / event
-      #  for i in np.arange(segmentTimes.size,0):
-            #MFCC
+        #  for i in np.arange(segmentTimes.size,0):
+        #MFCC
         
-        X = M.spectrogram(audioChunk, N, N / hopDenom, winfunc(N))
+        '''X = M.spectrogram(audioChunk, N, N / hopDenom, winfunc(N))
         spect_fs = fs / (N / hopDenom)
         
         #   Not normalized, 'cause we need to do that over all time.
         mfcc = llspect.MFCC(X, nFilters, nDCTCoefs, minFreq, maxFreq, fftParams)
-        featureDict[index] = mfcc
+        featureDict[index] = mfcc'''
 
         # 4. Time-average for each segment / event
         #time_averaged_mfcc = mir_utils.AverageFeaturesInTime(mfcc, spect_fs, seglen)

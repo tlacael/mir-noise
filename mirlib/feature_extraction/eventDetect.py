@@ -21,15 +21,14 @@ class onsetDetect:
     def envelopeFollow(self, winLen, hopSize):
         self.winLen = winLen
         self.hopSize = hopSize
-        
-        xPad = zeros((self.winLen/2,1))
-        xPad = concatenate((xPad, self.x),0)
+
+        xPad = zeros(self.winLen/2)
+        xPad = concatenate([xPad, self.x])
             
         
         xBuf = M.shingle(xPad, self.winLen, self.hopSize)
         xBuf.shape = (size(xBuf,0), size(xBuf,1))
         featureLen = size(xBuf, 0)
-        
         
         #creat window
         win = hanning(self.winLen)
