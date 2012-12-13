@@ -6,15 +6,18 @@ Final Project - Feature Extraction & Clustering of Noise Data
 '''
 
 import argparse
-import mirlib.audiofile as af
-import mirlib.feature_extraction.eventDetect as ed
 import numpy as np
-import mirlib.FFTParams as fftparams
-from mirlib import mir_utils
-from mirlib import featurevector
 import marlib.matlab as M
 
+from mirlib import mir_utils
+from mirlib import featurevector
+import mirlib.audiofile as af
+import mirlib.FFTParams as fftparams
+import mirlib.feature_extraction.eventDetect as ed
 import mirlib.feature_extraction.lowlevel_spectral as llspect
+import plot
+
+FEATURE_VECTOR_FILENAME = "features.npy"
 
 def getfeatures(args):
     debug = args.debug
@@ -70,10 +73,13 @@ def getfeatures(args):
 
         # Store these vectors in the feature_holder, labelled with their time
         StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
+
+        if chunkIndex > 8:
+            break;
         
     # Write features to disk
-    feature_holder.save()
-    
+    fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
+    print "Wrote", fileSize, "bytes to disk."
 
 def GetEvents(audiodata, fs, debug):
     # Get Onsets
@@ -126,6 +132,12 @@ def StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, ch
 
 def clustering(args):
     print "Feature Analysis/Clustering Mode"
+
+    feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
+
+    print feature_holder
+    mfccs = feature_holder.get_feature('mfcc')
+    plot.plot(mfccs)
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
