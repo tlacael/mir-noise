@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 def GetVectorLength(vector):
     if vector.ndim == 1:
@@ -22,18 +23,30 @@ class feature_holder:
      load
 
     '''
-    def __init__(self, vector_template, initial_size=0):
-        self.vector_name_map, self.vector_index_map = self.construct_maps(vector_template)
-        self.vector_length = sum(self.vector_index_map.values())
-
-        # current time index
-        self.clear()
-
-        # if initial_size > 0, create vector of zeros
-        self.vector = np.array([])
-
-        # initalize a dict for mapping the indecies to time
-        self.time_dict = dict()
+    def __init__(self, *args, **kwargs):
+        if kwargs.has_key('filename'):
+            filename = kwargs['filename']
+            if os.path.exists(filename):
+                self.load(filename)
+            else:
+                raise AssertionError("Error: bad file path")
+        else:
+            if len(args) > 0:
+                vector_template = args[0]
+            
+                self.vector_name_map, self.vector_index_map = self.construct_maps(vector_template)
+                self.vector_length = sum(self.vector_index_map.values())
+                
+                # current time index
+                self.clear()
+                
+                # if initial_size > 0, create vector of zeros
+                self.vector = np.array([])
+                
+                # initalize a dict for mapping the indecies to time
+                self.time_dict = dict()
+            else:
+                raise AssertionError("Inappropriate parameters!")
 
     def construct_maps(self, vector_template):
         arrtmp = np.asarray(vector_template)
@@ -125,7 +138,7 @@ class feature_holder:
             self.vector[timeindex:(timeindex + vecLen), feature_start:feature_end] = values
         else:
             # Throw invalid index exception
-            raise IndexError("Time Indec out of range")
+            raise IndexError("Time Index out of range")
 
         if timelabel is not None:
             self.set_timelabel(timelabel, timeindex, vecLen)
@@ -170,12 +183,28 @@ class feature_holder:
             np.save(f, self.vector_name_map)
             np.save(f, self.vector_index_map)
             np.save(f, self.vector_length)
+            np.save(f, self.time_dict)
             np.save(f, self.vector)
+
+        if os.path.exists(filename):
+            return os.stat(filename).st_size
+        else:
+            return None 
 
     def load(self, filename):
         with open(filename, 'r+b') as f:
-            self.vector_name_map = np.load(f)
-            self.vector_index_map = np.load(f)
-            self.vector_length = np.load(f)
+            self.vector_name_map = dict(np.load(f).item())
+            self.vector_index_map = dict(np.load(f).item())
+            self.vector_length = np.load(f).item()
+            self.time_dict = dict(np.load(f).item())
             self.vector = np.load(f)
 
+    def __str__( self ):
+        return "vector_holder instance\n" + \
+          "---------------------------------\n" + \
+          "Name Map - %s\n" % str(self.vector_name_map) + \
+          "Index Map - %s\n" % str(self.vector_index_map) + \
+          "Length - %s\n" % str(self.vector_length) + \
+          "Time Mapping - %s\n" % str(self.time_dict) + \
+          "Vector Shape - %s\n" % str(self.vector.shape) + \
+          "---------------------------------\n"

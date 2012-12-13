@@ -126,17 +126,39 @@ class TestFeatureHolder(unittest.TestCase):
         self.assertEquals(self.fvh.get_nvectors(), 4)
         self.assertTrue((self.fvh.vector[3] == newVect).all())
 
-        filename = 'features_test.npy'
-        self.fvh.save(filename)
-        self.assertTrue(os.path.exists(filename))
+        feature = 'mfcc'
+        label = (10, 15)
+        newFeats = np.random.randn(15, self.nMFCC)
+        self.fvh.add_feature(feature, newFeats, timelabel=label)
+        self.assertEquals(self.fvh.get_nvectors(), 19)
+        storedFeatures1 = self.fvh.get_feature(feature)
+        self.assertTrue( (self.fvh.vector[:, 1:] == storedFeatures1).all() )
+        storedFeatures2 = self.fvh.get_feature_by_label(label, feature)
+        self.assertTrue( (newFeats == storedFeatures2).all() )
+        
+
+        file = 'features_test.npy'
+        self.fvh.save(file)
+        self.assertTrue(os.path.exists(file))
 
         fvh2 = fv.feature_holder(self.vector_template)
-        fvh2.load('features_test.npy')
+        fvh2.load(file)
         self.assertEquals(self.fvh.vector_name_map, fvh2.vector_name_map)
         self.assertEquals(self.fvh.vector_index_map, fvh2.vector_index_map)
         self.assertEquals(self.fvh.vector_length, fvh2.vector_length)
         self.assertTrue( (self.fvh.vector == fvh2.vector).all() )
-        
+
+        fvh3 = fv.feature_holder(filename=file)
+        self.assertEquals(self.fvh.vector_name_map, fvh3.vector_name_map)
+        self.assertEquals(self.fvh.vector_index_map, fvh3.vector_index_map)
+        self.assertEquals(self.fvh.vector_length, fvh3.vector_length)
+        self.assertTrue( (self.fvh.vector == fvh3.vector).all() )
+
+        self.assertEquals(self.fvh.get_nvectors(), 19)
+        storedFeatures1 = self.fvh.get_feature(feature)
+        self.assertTrue( (self.fvh.vector[:, 1:] == storedFeatures1).all() )
+        storedFeatures2 = self.fvh.get_feature_by_label(label, feature)
+        self.assertTrue( (newFeats == storedFeatures2).all() )
 
 
 if __name__ == "__main__":
