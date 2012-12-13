@@ -184,8 +184,10 @@ class onsetDetect:
             EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*hopSize/float(self.fs)-widen
             EventTimes[i,1] = (EventCenters[0,i] + 0.5- padAdjust)*hopSize/float(self.fs)+widen
         
+        #make sure time vlues not out of bounds
         EventTimes[EventTimes<0]=0
-        EventTimes[EventTimes > chunkLen]
+        
+        EventTimes[EventTimes > chunkLen]=chunkLen
         self.EventTimes = EventTimes
         
         
