@@ -179,13 +179,13 @@ class onsetDetect:
         widen = 1 #amount to pad window on either side of event, in seconds
         padAdjust = 0.5
 
-        for i in eventIndex
+        for i in eventIndex:
             EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*hopSize/float(self.fs)-widen
             if EventTimes[i,0] < 0:
                 EventTimes[i,0] = 0
             EventTimes[i,1] = (EventCenters[0,i] + 0.5- padAdjust)*hopSize/float(self.fs)+widen
-            if EventTime[i,1] > chunkLen:
-                EventTime[i,1] = chunkLen
+            if EventTimes[i,1] > chunkLen:
+                EventTimes[i,1] = chunkLen
             
         #make sure time vlues not out of bounds
         self.EventTimes = EventTimes
