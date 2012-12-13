@@ -27,10 +27,9 @@ class onsetDetect:
         self.hopSize = hopSize
 
     
-        print self.x.shape
-        print 'hi'
+    
         xPad = zeros((self.winLen/2))
-        print xPad.shape
+
       #  size(xPad,1) = size(self.x,1)
         xPad = concatenate([xPad, self.x])
             
@@ -60,8 +59,7 @@ class onsetDetect:
         
         xPad = zeros(self.winLen/2)
         
-        print shape(self.x)
-        print shape(xPad)
+
        # size(xPad,1) = size(self.x,1)
         xPad = concatenate([xPad, self.x, xPad])
         
@@ -180,14 +178,16 @@ class onsetDetect:
         
         widen = 1 #amount to pad window on either side of event, in seconds
         padAdjust = 0.5
-        for i in eventIndex:
+
+        for i in eventIndex
             EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*hopSize/float(self.fs)-widen
+            if EventTimes[i,0] < 0:
+                EventTimes[i,0] = 0
             EventTimes[i,1] = (EventCenters[0,i] + 0.5- padAdjust)*hopSize/float(self.fs)+widen
-        
+            if EventTime[i,1] > chunkLen:
+                EventTime[i,1] = chunkLen
+            
         #make sure time vlues not out of bounds
-        EventTimes[EventTimes<0]=0
-        
-        EventTimes[EventTimes > chunkLen]=chunkLen
         self.EventTimes = EventTimes
         
         
@@ -212,10 +212,7 @@ class onsetDetect:
                 reducedEvents[i,:] = temp[i+offset,:]
                 i+=1
                 
-        
 
-        
-        print offset
         
              
         self.reducedEvents = reducedEvents[:-offset-1,:]
