@@ -43,6 +43,10 @@ plot(timeY,sonVec, color='b');show()
 
 class SoneCalculator:
     def __init__(self, y, fs, winLen=1024):
+        
+                
+        if y.ndim == 2 and y.shape[1] == 1:
+            y.shape = (y.shape[0]) 
         self.y = y;
         self.fs = fs;
         self.winLen = winLen
@@ -50,7 +54,7 @@ class SoneCalculator:
 
     def calcSoneLoudness(self):     
         
-        yPad = zeros((self.winLen/2,1))
+        yPad = zeros((self.winLen/2))
         yPad = concatenate((yPad, self.y, yPad),0)
         
         self.yBuf = M.shingle(yPad, self.winLen, self.winLen)

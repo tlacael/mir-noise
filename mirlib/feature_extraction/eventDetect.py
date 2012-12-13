@@ -15,6 +15,10 @@ import math
 class onsetDetect:
     
     def __init__(self, x, fs):
+        
+        if x.ndim == 2 and x.shape[1] == 1:
+            x.shape = (x.shape[0])            
+            
         self.x = x
         self.fs = fs
 
@@ -25,7 +29,7 @@ class onsetDetect:
     
         print self.x.shape
         print 'hi'
-        xPad = zeros((self.winLen/2,1))
+        xPad = zeros((self.winLen/2))
         print xPad.shape
       #  size(xPad,1) = size(self.x,1)
         xPad = concatenate([xPad, self.x])
@@ -54,7 +58,8 @@ class onsetDetect:
         
 
         
-        xPad = zeros((self.winLen/2,1))
+        xPad = zeros(self.winLen/2)
+        
         print shape(self.x)
         print shape(xPad)
        # size(xPad,1) = size(self.x,1)
@@ -173,7 +178,7 @@ class onsetDetect:
         
         #convert event centers to time windows in seconds
         
-        widen = 0 #amount to pad window on either side of event, in seconds
+        widen = 1 #amount to pad window on either side of event, in seconds
         padAdjust = 0.5
         for i in eventIndex:
             EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*hopSize/float(self.fs)-widen
