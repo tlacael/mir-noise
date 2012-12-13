@@ -15,6 +15,7 @@ import mirlib.audiofile as af
 import mirlib.FFTParams as fftparams
 import mirlib.feature_extraction.eventDetect as ed
 import mirlib.feature_extraction.lowlevel_spectral as llspect
+from mirlib.feature_analysis import kmeans
 import plot
 
 FEATURE_VECTOR_FILENAME = "features.npy"
@@ -28,7 +29,7 @@ def getfeatures(args):
 
     # FFT Parameters
     fs = afm.afReader.samplerate()
-    N = 1024
+    N = 2048
     hopDenom = 2
     zp = 0
     winfunc=np.hamming
@@ -39,14 +40,14 @@ def getfeatures(args):
     nDCTCoefs = 20
     minFreq = 50
     maxFreq = 8000
-    nIndexSkip = 0
+    nIndexSkip = 2
     seglen = 1
     mfccParams = fftparams.MFCCParams(nFilters, nDCTCoefs, minFreq, maxFreq, nIndexSkip)
 
     # Feature Vector parameters
     # Template : ('name', order index, length)
     vector_template = [('sones', 0, 1),
-                        ('mfcc', 1, nDCTCoefs)]
+                        ('mfcc', 1, nDCTCoefs - nIndexSkip)]
     # Initialize the feature vector holder
     feature_holder = featurevector.feature_holder(vector_template)
     
@@ -59,7 +60,7 @@ def getfeatures(args):
 
         # Get Events
         eventTimes = GetEvents(audioChunk, fs, debug)
-        print "EVENTTIMES:", eventTimes
+        if debug: print "EVENTTIMES:", eventTimes
         eventTimesSamps = np.asarray(np.multiply(eventTimes,fs),dtype=int)
 
         # Get event audio segments
@@ -134,10 +135,18 @@ def clustering(args):
     print "Feature Analysis/Clustering Mode"
 
     feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
+    k = args.k
+    thresh = args.stop_threshold
 
     print feature_holder
     mfccs = feature_holder.get_feature('mfcc')
-    plot.plot(mfccs)
+
+    print feature_holder.vector.shape
+    centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
+    print "k-Means with k=%d run in %d iterations." % (k, nItr)
+    print centroids
+    
+    plot.plot(mfccs, centroids)
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
@@ -155,6 +164,8 @@ def ParseArgs():
 
     # Parameters for Clustering mode
     parser_clustering = subparsers.add_parser("clustering", help="Feature Analysis Mode")
+    parser_clustering.add_argument("k", help="Number of classes", type=int)
+    parser_clustering.add_argument("-T", "--stop_threshold", help="Threshold to stop iterating k-means", default=0.01, type=float)
     parser_clustering.set_defaults(func=clustering)
 
     args = parser.parse_args()
