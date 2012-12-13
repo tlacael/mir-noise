@@ -18,7 +18,8 @@ run calcLoudness.py
 [x,fs] = M.wavread('wburgShort.wav')
 #[x,fs] = M.wavread('RZABR40.wav')
 #[x,fs] = M.wavread('RZABR40pad.wav')
-winLen = 4096
+run calcLoudness.py
+winLen = 4096*8
 hopSize = winLen
 z = SoneCalculator(x,fs, winLen)
 sonVec = z.calcSoneLoudness()
@@ -50,7 +51,7 @@ class SoneCalculator:
     def calcSoneLoudness(self):     
         
         yPad = zeros((self.winLen/2,1))
-        yPad = concatenate((yPad, self.y),0)
+        yPad = concatenate((yPad, self.y, yPad),0)
         
         self.yBuf = M.shingle(yPad, self.winLen, self.winLen)
         self.bufLen = size(self.yBuf, 0)

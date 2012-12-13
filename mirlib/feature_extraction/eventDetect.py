@@ -22,7 +22,12 @@ class onsetDetect:
         self.winLen = winLen
         self.hopSize = hopSize
 
-        xPad = zeros(self.winLen/2)
+    
+        print self.x.shape
+        print 'hi'
+        xPad = zeros((self.winLen/2,1))
+        print xPad.shape
+      #  size(xPad,1) = size(self.x,1)
         xPad = concatenate([xPad, self.x])
             
         
@@ -47,7 +52,15 @@ class onsetDetect:
         self.winLen = winLen
         self.hopSize = hopSize
         
-        xBuf = M.shingle(self.x, self.winLen, self.hopSize)
+
+        
+        xPad = zeros((self.winLen/2,1))
+        print shape(self.x)
+        print shape(xPad)
+       # size(xPad,1) = size(self.x,1)
+        xPad = concatenate([xPad, self.x, xPad])
+        
+        xBuf = M.shingle(xPad, self.winLen, self.hopSize)
         xBuf.shape = (size(xBuf,0), size(xBuf,1))
         featureLen = size(xBuf, 0)
         
@@ -83,7 +96,7 @@ class onsetDetect:
         self.peakMatrix.shape = (1, size(self.peakMatrix))
         
         #set up padding for shifting register
-        halfLen = 2
+        halfLen = 4
         self.zeroPad = zeros([1,halfLen])
         self.peakWin = size(self.zeroPad,1)*2+1;
         
@@ -96,73 +109,109 @@ class onsetDetect:
             else:
                 self.maxMatrix[i,:] = self.buff[0,i:1-self.peakWin+i] 
             
-        self.maxMatrix[self.maxMatrix==0]=-1
+        self.maxMatrix[self.maxMatrix==0] = -1
         
         self.maxMatrix = self.maxMatrix.max(0)
         
-        self.compare = z.maxMatrix == z.peakMatrix
+        self.compare = self.maxMatrix == self.peakMatrix
         
-        self.peakTimes = nonzero
+        self.peakTimes = nonzero(self.compare)
+        self.peakTimes = array((self.peakTimes))
+        
+        return self.peakTimes[1,:]
         
     def findEventLocations(self):
         #set 2 second window for strong smoothing
-        winLen = 4096
-        hopSize = winLen
+        winLen = self.fs*0.5
+        hopSize = winLen/2.
         
-        EnvSmooth = self.envelopeFollow(winLen, hopSize)
+        self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
+        
         #normalize
-        self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
+        #self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
         #thresh = mean(EnvSmooth)
         
+        
         EnvThresh = self.EnvSmooth
-        thresh = mean(EnvThresh)*0.75
+        thresh = median(EnvThresh)*1.4
         
         EnvThresh[EnvThresh<thresh]=0
         
-        EventCenters = np.nonzero(EnvThresh)
-        EventCenters = np.array((EventCenters))
+        
+        EventCenters = nonzero(EnvThresh)
+        EventCenters = array(EventCenters)
+    
+        lengths = zeros((EventCenters.size,2))
+        count = 0
+        len=0
+        
+        '''
+        for sample in arange(EnvThresh.size):
+            while(EnvThresh[sample]!= 0):
+                len+=1
+            lengths[count] = (len,sample-len)
+            if len >0:
+                count+=1
+                len=0
+        self.lengths = lengths
+        
+        '''
+        
+        EventCenters = array((EventCenters))
         
         self.cents = EventCenters
         
+        #EventCenters = array(peakTimes)
+        self.cents = EventCenters
         
         self.numberOfEvents = EventCenters.size
         
         EventTimes = zeros((self.numberOfEvents,2))
         eventIndex = arange(self.numberOfEvents)
         
+        chunkLen = self.fs*self.x.size
+        
         #convert event centers to time windows in seconds
         
-        widen = 3 #amount to pad window on either side of event, in seconds
+        widen = 0 #amount to pad window on either side of event, in seconds
+        padAdjust = 0.5
         for i in eventIndex:
-            EventTimes[i,0] = (EventCenters[0,i] - 0.5)*winLen/float(self.fs)-widen
-            EventTimes[i,1] = (EventCenters[0,i] + 0.5)*winLen/float(self.fs)+widen
+            EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*hopSize/float(self.fs)-widen
+            EventTimes[i,1] = (EventCenters[0,i] + 0.5- padAdjust)*hopSize/float(self.fs)+widen
         
         EventTimes[EventTimes<0]=0
+        EventTimes[EventTimes > chunkLen]
         self.EventTimes = EventTimes
         
         
-        
+        eventIndex = arange(self.numberOfEvents)
         #reduce number of segments i.e. overlaps, nearby
         reducedEvents = zeros((self.numberOfEvents,2))
-        temp = EventTimes
+        temp = self.EventTimes
         
         offset =0;
-        timeThresh = 3 #in seconds
-        for i in eventIndex:
-            
-            reducedEvents[i-offset,0] = temp[i,0]
-            
-            
-            
-            if i < eventIndex[-1]:
-                if (temp[i+1,0] - temp[i,1]) < timeThresh:
-                    reducedEvents[i-offset,1] = temp[i+1,1]
-                    temp[i+1,:] = reducedEvents[i-offset,:]
-                    offset +=1
-                else:
-                    reducedEvents[i-offset,1] = temp[i,1]
-              
-        self.reducedEvents = reducedEvents[:-offset,:]
+        timeThresh = 0#1*winLen/float(self.fs) #in seconds
+        i = 1
+        
+        reducedEvents[0,:] = temp[0,:]
+        while((i +offset+1) < self.numberOfEvents):
+            if temp[i+offset,0]-reducedEvents[i-1,0] <=0:
+                reducedEvents[i-1,1] = temp[i+offset,1]
+                offset+=1
+            elif temp[i+offset,0]-reducedEvents[i-1,1]<=timeThresh:
+                reducedEvents[i-1,1] = temp[i+offset,1]
+                offset+=1
+            else:
+                reducedEvents[i,:] = temp[i+offset,:]
+                i+=1
+                
+        
+
+        
+        print offset
+        
+             
+        self.reducedEvents = reducedEvents[:-offset-1,:]
         self.numberOfEvents = size(self.reducedEvents,0)  
             
         return self.reducedEvents
@@ -172,23 +221,34 @@ class onsetDetect:
 ''' Test script
 # load in audio to be analyzed
 #[x, fs] = M.wavread('/Users/Tlacael/Python/Homework1/mir-noise/feat_extract/RZABR40.wav')
-#[x, fs] = M.wavread('GV_Excerp_Short.wav')
-[x, fs] = M.wavread('wburgShort.wav')
 
+#[x, fs] = M.wavread('wburgShort.wav')
+[x, fs] = M.wavread('/Users/tlacael/NYU/MIR/mir-noise/audio_files/GV02_A_Format4min.wav')
 
 run eventDetect.py
 #look at segment extraction plot
-winLen = fs*1
-hopSize = winLen 
+winLen = fs
+hopSize = winLen/2. 
 
 
 run eventDetect.py
 z = onsetDetect(x, fs)
 
 
+#events = z.findEventLocations()
+
+#events = multiply(events,fs)
+
+
+run eventDetect.py
+winLen = fs
+hopSize = winLen/2. 
+z = onsetDetect(x, fs)
+#peaks = z.envelopeFollowEnergy(winLen,hopSize)
 events = z.findEventLocations()
 
 events = multiply(events,fs)
+
 
 hop = 40
 timeX = arange(z.x.size)
@@ -196,6 +256,15 @@ timeX.shape = z.x.shape
 timeX = divide(timeX, float(fs))
 timeX.shape = z.x.shape
 plot(timeX[::hop], z.x[::hop], color='r')
+
+
+#plot envelope
+#peaks = divide(peaks,peaks.max())
+#envTime = arange(size(peaks))
+#nvTime = divide(envTime,fs/float(hopSize))
+#envTime.shape = peaks.shape
+#plot(envTime,peaks);show()
+
 
 eventPlot = zeros(size(timeX))
 for i in range(size(events,0)):
