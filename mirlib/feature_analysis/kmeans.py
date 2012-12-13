@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 
 def euclid_dist(vec1, vec2):
-    if len(vec1.shape) == 2:
+    if vec1.ndim == 2:
         return np.sqrt(np.sum(np.power(np.subtract(vec1, vec2), 2), axis=1))
     else:
         return np.sqrt(np.sum(np.power(np.subtract(vec1, vec2), 2)))
@@ -22,13 +22,12 @@ def GetNearestCentroids(data, centroids):
     return dist.argmin(axis=0)
 
 class kmeans_runner:
-    def __init__(self, k, update_factor=0.01, end_thresh=0.01):
+    def __init__(self, k, end_thresh=0.01):
         ''' k is the number of centroids to use. '''
         self.k_classes = k
         self.k_counts = np.zeros(self.k_classes)
         self.itr_count = 0
         self.stop_flag = False
-        self.update_factor = update_factor
         self.end_thresh = end_thresh
 
     def init_data(self, data):
@@ -60,7 +59,7 @@ class kmeans_runner:
             centroid_update[i] = np.mean( self.data[(nearest_centroids == i).nonzero()] )
 
         self.update_changes = centroid_update - self.centroids
-        self.centroids = self.centroids + self.update_changes * self.update_factor
+        self.centroids = self.centroids + self.update_changes
 
     def UpdateCentroids_Online(self, data):
         # because we're sending only one point in here, should return the index
