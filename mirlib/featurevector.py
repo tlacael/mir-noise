@@ -1,6 +1,13 @@
 import numpy as np
 
-class featurevector_holder:
+def GetVectorLength(vector):
+    if vector.ndim == 1:
+        vecLen = 1
+    else:
+        vecLen = len(vector)
+    return vecLen
+
+class feature_holder:
     ''' Class to manage collections of feature vectors. 
 
     Exposed methods:
@@ -36,39 +43,44 @@ class featurevector_holder:
         return len(self.vector)
 
     def clear(self):
-        self.index = 0
         self.vector = np.array([])
 
-    def isvalidindex(self, index):
-        return index != None and index >= 0 and index < self.get_nvectors()
+    def isvalidindex(self, index, length=1):
+        return index != None and index >= 0 and (index + length - 1) < self.get_nvectors()
     
     def add_vector(self, vector, timeindex=None):
+        vecLen = GetVectorLength(vector)
+        
         # Case 1: timeindex=None
         if timeindex is None:
-            self.create_vector()
-            self.set_vector(self.index, vector)
+            startingIndex = self.vector.shape[0]
+            self.create_vector(timelength=vecLen)
+            self.set_vector(startingIndex, vector)
         # Case 2: timeindex!=None
         else:
-            self.create_vector(timeindex)
+            self.create_vector(timeindex, vecLen)
             self.set_vector(timeindex, vector)
 
     def add_feature(self, name, feature, timeindex=None):
+        vecLen = GetVectorLength(feature)
+        
         # Case 1: timeindex=None
         if timeindex is None:
+            startingIndex = self.vector.shape[0]
             self.create_vector()
-            self.set_feature(name, self.index, feature)
+            self.set_feature(name, startingIndex, feature)
         # Case 2: timeindex!=None
         else:
             self.create_vector(timeindex)
             self.set_feature(name, timeindex, feature)
 
-    def create_vector(self, timeindex=None):
+    def create_vector(self, timeindex=None, timelength=1):
         startVec = self.vector
 
         if timeindex is None:
-            nToAppend = 1
-        elif self.get_nvectors() < timeindex:
-            nToAppend = (timeindex - self.get_nvectors()) + 1
+            nToAppend = timelength
+        elif self.get_nvectors() < (timeindex + timelength):
+            nToAppend = ((timeindex + timelength - 1) - self.get_nvectors()) + 1
         else:
             nToAppend = 0
 
@@ -78,17 +90,18 @@ class featurevector_holder:
             # Case 1: self.vector is []
             if self.get_nvectors() == 0:
                 self.vector = appendVec
-                # Case 2: self.vector is not []
+            # Case 2: self.vector is not []
             else: # self.get_nvectors() > 0:
                 self.vector = np.concatenate([startVec, appendVec])
-                self.index += nToAppend
 
     def set_vector(self, timeindex, vector):
-        if self.isvalidindex(timeindex):
-            self.vector[timeindex] = vector
+        vecLen = GetVectorLength(vector)
+            
+        if self.isvalidindex(timeindex, vecLen):
+            self.vector[timeindex:(timeindex + vecLen)] = vector
         else:
             # Throw invalid index exception
-            raise IndexError
+            raise IndexError("idx: %d, len: %d, max: %d" % (timeindex, vecLen, self.get_nvectors()))
 
     def get_feature_range(self, name):
         try:
@@ -100,9 +113,11 @@ class featurevector_holder:
             return None, None
 
     def set_feature(self, name, timeindex, values):
-        if self.isvalidindex(timeindex):
+        vecLen = GetVectorLength(values)
+        
+        if self.isvalidindex(timeindex, vecLen):
             feature_start, feature_end = self.get_feature_range(name)
-            self.vector[timeindex, feature_start:feature_end] = values
+            self.vector[timeindex:(timeindex + vecLen), feature_start:feature_end] = values
         else:
             # Throw invalid index exception
             raise IndexError("Time Indec out of range")
@@ -128,7 +143,6 @@ class featurevector_holder:
             np.save(f, self.vector_name_map)
             np.save(f, self.vector_index_map)
             np.save(f, self.vector_length)
-            np.save(f, self.index)
             np.save(f, self.vector)
 
     def load(self, filename):
@@ -136,5 +150,5 @@ class featurevector_holder:
             self.vector_name_map = np.load(f)
             self.vector_index_map = np.load(f)
             self.vector_length = np.load(f)
-            self.index = np.load(f)
             self.vector = np.load(f)
+
