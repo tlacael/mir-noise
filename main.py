@@ -147,7 +147,6 @@ def clustering(args):
     print feature_holder.vector.shape
     centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)
-    print centroids
     
     plot.plot(mfccs, centroids)
 

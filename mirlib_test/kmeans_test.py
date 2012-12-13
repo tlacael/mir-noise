@@ -42,6 +42,40 @@ class Test_k_means(unittest.TestCase):
 
         self.assertTrue( (nearest == desired_result).all() )
 
+    def test_init_data(self):
+        # Try it with 2D
+        muX, sigmaX = 0, 0.2 # mean and standard deviation
+        muY, sigmaY = 2, 0.2
+        x = np.random.normal(muX, sigmaX, 250)
+        y = np.random.normal(muY, sigmaY, 250)
+        y2 = y + 5
+        points1 = array([x,y]).T
+        points2 = array([x, y2]).T
+        points = np.concatenate([points1, points2])
+
+        k = 2
+        kmr = kmeans.kmeans_runner(k)
+        kmr.init_data(points)
+        self.assertTrue( (kmr.data == points).all() )
+        self.assertEquals( kmr.k_classes, k )
+        self.assertEquals( kmr.centroids.shape, (k, 2) )
+
+        # Try it with moreD
+        muZ, sigmaZ = -1, .3
+        z = np.random.normal(muZ, sigmaZ, 250)
+        points1 = array([x, y, z]).T
+        points2 = array([x, y2, z + 2]).T
+        points3 = array([x - 4, y - 2, z + 5]).T
+        points4 = array([x + 2, y + 10, z]).T
+        points = np.concatenate([points1, points2, points3, points4])
+
+        k = 4
+        kmr = kmeans.kmeans_runner(k)
+        kmr.init_data(points)
+        self.assertTrue( (kmr.data == points).all() )
+        self.assertEquals( kmr.k_classes, k )
+        self.assertEquals( kmr.centroids.shape, (k, 3) )
+
 def kmr_test_plot(data, k, end_thresh):
     from matplotlib.pylab import ion, figure, draw, ioff, show, plot, cla
     ion()
