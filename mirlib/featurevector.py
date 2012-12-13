@@ -31,7 +31,9 @@ class feature_holder:
 
         # if initial_size > 0, create vector of zeros
         self.vector = np.array([])
-        #self.vector = np.zeros([initial_size, self.vector_length])
+
+        # initalize a dict for mapping the indecies to time
+        self.time_dict = dict()
 
     def construct_maps(self, vector_template):
         arrtmp = np.asarray(vector_template)
@@ -48,31 +50,31 @@ class feature_holder:
     def isvalidindex(self, index, length=1):
         return index != None and index >= 0 and (index + length - 1) < self.get_nvectors()
     
-    def add_vector(self, vector, timeindex=None):
+    def add_vector(self, vector, timeindex=None, timelabel=None):
         vecLen = GetVectorLength(vector)
         
         # Case 1: timeindex=None
         if timeindex is None:
             startingIndex = self.vector.shape[0]
             self.create_vector(timelength=vecLen)
-            self.set_vector(startingIndex, vector)
+            self.set_vector(startingIndex, vector, timelabel)
         # Case 2: timeindex!=None
         else:
             self.create_vector(timeindex, vecLen)
-            self.set_vector(timeindex, vector)
+            self.set_vector(timeindex, vector, timelabel)
 
-    def add_feature(self, name, feature, timeindex=None):
+    def add_feature(self, name, feature, timeindex=None, timelabel=None):
         vecLen = GetVectorLength(feature)
         
         # Case 1: timeindex=None
         if timeindex is None:
             startingIndex = self.vector.shape[0]
-            self.create_vector()
-            self.set_feature(name, startingIndex, feature)
+            self.create_vector(timelength=vecLen)
+            self.set_feature(name, startingIndex, feature, timelabel)
         # Case 2: timeindex!=None
         else:
-            self.create_vector(timeindex)
-            self.set_feature(name, timeindex, feature)
+            self.create_vector(timeindex, vecLen)
+            self.set_feature(name, timeindex, feature, timelabel)
 
     def create_vector(self, timeindex=None, timelength=1):
         startVec = self.vector
@@ -94,7 +96,7 @@ class feature_holder:
             else: # self.get_nvectors() > 0:
                 self.vector = np.concatenate([startVec, appendVec])
 
-    def set_vector(self, timeindex, vector):
+    def set_vector(self, timeindex, vector, timelabel):
         vecLen = GetVectorLength(vector)
             
         if self.isvalidindex(timeindex, vecLen):
@@ -102,6 +104,9 @@ class feature_holder:
         else:
             # Throw invalid index exception
             raise IndexError("idx: %d, len: %d, max: %d" % (timeindex, vecLen, self.get_nvectors()))
+
+        if timelabel is not None:
+            self.set_timelabel(timelabel, timeindex, vecLen)
 
     def get_feature_range(self, name):
         try:
@@ -112,7 +117,7 @@ class feature_holder:
             print "Invalid Key:", name
             return None, None
 
-    def set_feature(self, name, timeindex, values):
+    def set_feature(self, name, timeindex, values, timelabel):
         vecLen = GetVectorLength(values)
         
         if self.isvalidindex(timeindex, vecLen):
@@ -121,6 +126,9 @@ class feature_holder:
         else:
             # Throw invalid index exception
             raise IndexError("Time Indec out of range")
+
+        if timelabel is not None:
+            self.set_timelabel(timelabel, timeindex, vecLen)
 
     def get_feature(self, name, timeindex=None):
         feature_start, feature_end = self.get_feature_range(name)
@@ -137,7 +145,26 @@ class feature_holder:
                 raise IndexError("Time Index out of range")
         return ret
 
-    
+    def set_timelabel(self, timelabel, timeindex, vecLen):
+        self.time_dict[timelabel] = (timeindex, vecLen)
+        
+    def get_vector_by_label(self, label):
+        (timeind, length) = self.time_dict[label]
+
+        if self.isvalidindex(timeind, length):
+            return self.vector[timeind : (timeind + length)]
+        else:
+            raise IndexError("Stored Label contains incorrect index %d length %d" % (timeind, length))
+
+    def get_feature_by_label(self, label, name):
+        (timeind, length) = self.time_dict[label]
+        feature_start, feature_end = self.get_feature_range(name)
+
+        if self.isvalidindex(timeind, length):
+            return self.vector[timeind : (timeind + length), feature_start:feature_end]
+        else:
+            raise IndexError("Time Index out of range")
+        
     def save(self, filename):
         with open(filename, 'w+b') as f:
             np.save(f, self.vector_name_map)

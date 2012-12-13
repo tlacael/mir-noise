@@ -95,6 +95,27 @@ class TestFeatureHolder(unittest.TestCase):
         # Check adding multiple features
         newFeature = np.random.randn()
 
+    def test_timedict(self):
+        # start cleared
+        self.assertEqual(self.fvh.get_nvectors(), 0)
+
+        # Add a new vector, with length.
+        newVector = np.random.randn(10, self.check_nfeats)
+        newLabel = (0, 10)
+        self.fvh.add_vector(newVector, timelabel=newLabel)
+        self.assertEquals(self.fvh.get_nvectors(), 10)
+        storedVector = self.fvh.get_vector_by_label(newLabel)
+        self.assertTrue( (newVector == storedVector).all() )
+
+        # Try a crazy one, just for shits 'n giggles.
+        feature = 'mfcc'
+        newFeatures = np.random.randn(100, self.nMFCC)
+        label = (32, 'fred')
+        self.fvh.add_feature(feature, newFeatures, 100, label)
+        self.assertEquals(self.fvh.get_nvectors(), 200)
+        storedVector = self.fvh.get_feature_by_label(label, feature)
+        self.assertTrue( (newFeatures == storedVector).all() )
+
     def test_loadsave(self):
         # Starts cleared
         self.assertEquals(self.fvh.get_nvectors(), 0)
