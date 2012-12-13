@@ -19,9 +19,9 @@ import mirlib.feature_extraction.lowlevel_spectral as llspect
 def getfeatures(args):
     debug = args.debug
     filepath = args.audiofile
-    audio_seg = args.audio_seg_length
+    chunk_len = args.audio_seg_length
 
-    afm = af.audiofile_manager(filepath, audio_seg)
+    afm = af.audiofile_manager(filepath, chunk_len)
 
     # FFT Parameters
     fs = afm.afReader.samplerate()
@@ -52,10 +52,11 @@ def getfeatures(args):
     while afm.HasMoreData():
         audioChunk, chunkIndex = afm.GetNextSegment()
 
-        if debug: print "Read %d sample chunk of audio" % (len(audioChunk))
+        if debug: print "Read %d sample chunk of audio (%0.2fs)" % (len(audioChunk), len(audioChunk) / fs)
 
         # Get Events
         eventTimes = GetEvents(audioChunk, fs, debug)
+        print "EVENTTIMES:", eventTimes
         eventTimesSamps = np.asarray(np.multiply(eventTimes,fs),dtype=int)
 
         # Get event audio segments
@@ -68,7 +69,7 @@ def getfeatures(args):
         averagedEventSegmentMFCCs = AverageEventMFCCs(eventSegmentMFCCs, seglen, fftParams, debug)
 
         # Store these vectors in the feature_holder, labelled with their time
-        StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, eventTimes)
+        StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
         
     # Write features to disk
     feature_holder.save()
@@ -101,7 +102,7 @@ def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
         mfccSegments.append(mfcc)
         if debug:
             print "\t MFCC:", mfcc.shape
-            print "\t ",mfcc
+            #print "\t ",mfcc
     return mfccSegments
 
 def AverageEventMFCCs(mfccSegments, seglen, fftParams, debug):
@@ -112,8 +113,16 @@ def AverageEventMFCCs(mfccSegments, seglen, fftParams, debug):
         averaged_mfcc_segs.append(averaged_segment)
     return averaged_mfcc_segs
 
-def StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, eventTimes):
-    pass
+def StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug):
+    chunk_start_time = chunkIndex * chunk_len # in seconds
+    for i in range(len(averagedEventSegmentMFCCs)):
+        chunk_start = eventTimes[i][0]
+        chunk_length = eventTimes[i][1] - eventTimes[i][0]
+        timekey = (chunk_start_time + chunk_start, chunk_length)
+        thismfcc = averagedEventSegmentMFCCs[i]
+        if debug:
+            print "\t  Storing Vector at key:", timekey
+        feature_holder.add_feature('mfcc', thismfcc, timelabel=timekey)
 
 def clustering(args):
     print "Feature Analysis/Clustering Mode"
