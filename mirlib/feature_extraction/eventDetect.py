@@ -172,7 +172,10 @@ class onsetDetect:
         EventTimes = zeros((self.numberOfEvents,2))
         eventIndex = arange(self.numberOfEvents)
         
-        chunkLen = self.fs*self.x.size
+        chunkLen = self.x.size/self.fs
+        print "signal length", chunkLen
+        print "signal size", self.x.size
+        
         
         #convert event centers to time windows in seconds
         
