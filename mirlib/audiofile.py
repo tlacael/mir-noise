@@ -29,9 +29,13 @@ class audiofile_manager:
     def HasMoreData(self):
         return (self.index * self.seg_length_samps) < self.afReader.numsamples()
 
-    def GetNextSegment(self):
+    def GetNextSegment(self, bMono=True):
         segment = self.afReader.read_frame_at_index(self.index * self.seg_length_samps, self.seg_length_samps)
         self.index += 1
+
+        if bMono and (segment.shape) > 1 and segment.shape[1] > 1:
+            segment = segment[:, 0]
+        
         return segment, (self.index - 1)
 
 

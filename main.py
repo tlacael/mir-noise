@@ -17,11 +17,11 @@ import marlib.matlab as M
 import mirlib.feature_extraction.lowlevel_spectral as llspect
 
 def getfeatures(args):
+    debug = args.debug
     filepath = args.audiofile
     audio_seg = args.audio_seg_length
 
     afm = af.audiofile_manager(filepath, audio_seg)
-    fs = afm.afReader.samplerate()
 
     # FFT Parameters
     fs = afm.afReader.samplerate()
@@ -38,64 +38,82 @@ def getfeatures(args):
     maxFreq = 8000
     nIndexSkip = 0
     seglen = 1
+    mfccParams = fftparams.MFCCParams(nFilters, nDCTCoefs, minFreq, maxFreq, nIndexSkip)
 
     # Feature Vector parameters
     # Template : ('name', order index, length)
     vector_template = [('sones', 0, 1),
                         ('mfcc', 1, nDCTCoefs)]
-    feature_holder = featurevector.featurevector_holder(vector_template)
+    # Initialize the feature vector holder
+    feature_holder = featurevector.feature_holder(vector_template)
     
-    print "Feature Extraction Mode"
+    print "Feature Extraction Mode\n"
     # For each chunk of audio
     while afm.HasMoreData():
         audioChunk, chunkIndex = afm.GetNextSegment()
-        # Only look at Left if there's more than that
-        if (audioChunk.shape) > 1 and audioChunk.shape[1] > 1:
-            audioChunk = audioChunk[:,0]
 
-        print "Read %d sample chunk of audio" % (len(audioChunk))
+        if debug: print "Read %d sample chunk of audio" % (len(audioChunk))
+
+        # Get Events
+        eventTimes = GetEvents(audioChunk, fs, debug)
+        eventTimesSamps = np.asarray(np.multiply(eventTimes,fs),dtype=int)
+
+        # Get event audio segments
+        eventSegments = GetEventAudioSegments(eventTimesSamps, audioChunk, debug)
+
+        # Get the MFCCs for each segment / event
+        eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
+
+        # Time-average for each segment / event
+        averagedEventSegmentMFCCs = AverageEventMFCCs(eventSegmentMFCCs, seglen, fftParams, debug)
+
+        # Store these vectors in the feature_holder, labelled with their time
+        StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, eventTimes)
         
-        # 1. Get Onsets
-        s = ed.onsetDetect(audioChunk,fs)
+    # Write features to disk
+    feature_holder.save()
+    
+
+def GetEvents(audiodata, fs, debug):
+    # Get Onsets
+    onsetDetector = ed.onsetDetect(audiodata,fs)
         
-        # 2. Get Time-Segments from those offsets
-        segmentTimes = s.findEventLocations()
-        segmentTimesSamps = np.asarray(np.multiply(segmentTimes,fs),dtype=int)
-        segments = []
-        for i in np.arange(np.size(segmentTimes,0)):
-            segments.append(audioChunk[segmentTimesSamps[i,0]:segmentTimesSamps[i,1]])
-            
-            print "Event Detected. Start: %0.2fs, End: %0.2fs, Length: %d samps" % (segmentTimes[i,0],segmentTimes[i,1],len(segments[i]))
+    # Get Time-Segments from those offsets
+    return onsetDetector.findEventLocations()
 
-        # 3. Get the MFCCs for each segment / event
-        '''for i in np.arange(len(segmentTimes)):
-            X = M.spectrogram(segments[i], N, N / hopDenom, winfunc(N))
-            spect_fs = fs / (N / hopDenom)
+def GetEventAudioSegments(eventTimes, audiodata, debug):
+    ''' eventTimes must be in samples!!! '''
+    segments = []
+    for i in np.arange(len(eventTimes)):
+        segments.append(audiodata[eventTimes[i,0]:eventTimes[i,1]])
+
+        if debug:
+            print "\tEvent Detected. Start: %0.2fs, End: %0.2fs, Length: %d samps" % (eventTimes[i,0], eventTimes[i,1], len(segments[i]))
+
+    return segments
+
+def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
+    mfccSegments = []
+    for i in np.arange(len(eventSegments)):
+        X = M.spectrogram(eventSegments[i], fftParams.N, fftParams.h, fftParams.winfunc(fftParams.N))
         
-            mfcc = llspect.MFCC_Normalized(X, nFilters, nDCTCoefs, minFreq, maxFreq, fftParams)
-            #print mfcc.shape
-            #print mfcc
-            ##featureDict[index] = mfcc
-        '''
+        mfcc = llspect.MFCC_Normalized(X, mfccParams, fftParams)
+        mfccSegments.append(mfcc)
+        if debug:
+            print "\t MFCC:", mfcc.shape
+            print "\t ",mfcc
+    return mfccSegments
 
-        # 4. Time-average for each segment / event
-        #time_averaged_mfcc = mir_utils.AverageFeaturesInTime(mfcc, spect_fs, seglen)
+def AverageEventMFCCs(mfccSegments, seglen, fftParams, debug):
+    spect_fs = fftParams.fs / fftParams.h
+    averaged_mfcc_segs = []
+    for i in np.arange(len(mfccSegments)):
+        averaged_segment = mir_utils.AverageFeaturesInTime(mfccSegments[i], spect_fs, seglen)
+        averaged_mfcc_segs.append(averaged_segment)
+    return averaged_mfcc_segs
 
-        # 5. Write to disk
-        #if index > 5:
-        #    break
-
-    '''i = 0
-    mfccResult = featureDict[i]
-    i += 1
-    while i in featureDict.keys():
-        mfccResult = np.concatenate([mfccResult, featureDict[i]])
-        i += 1
-
-    from matplotlib.pylab import *
-    figure()
-    imshow(mfcc_norm.T, interpolation='nearest', origin='lower', aspect='auto')
-    show()'''
+def StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, eventTimes):
+    pass
 
 def clustering(args):
     print "Feature Analysis/Clustering Mode"
