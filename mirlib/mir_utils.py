@@ -52,8 +52,10 @@ def Normalize(x):
     ''' Returns x - min(x) / max(x - min(x)), operating in the last dimension '''
     ax = np.asarray(x, dtype=float)
     opAxis = len(ax.shape) - 1
-    x_m = (ax.T - ax.min(axis=opAxis)).T
-    return (x_m.T / (x_m).max(axis=opAxis)).T
+    '''x_m = (ax.T - ax.min(axis=opAxis)).T
+    return (x_m.T / (x_m).max(axis=opAxis)).T'''
+    return (x.T / x.max(axis=opAxis)).T
+    
 
 def PrintDataStats(data, title=''):
     dim = data.ndim
