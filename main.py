@@ -75,7 +75,7 @@ def getfeatures(args):
         # Store these vectors in the feature_holder, labelled with their time
         StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
 
-        if chunkIndex > 8:
+        if chunkIndex > 16:
             break;
         
     # Write features to disk
@@ -147,8 +147,10 @@ def clustering(args):
     print feature_holder.vector.shape
     centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)
+
+    classes = kmeans.vq(mfccs, centroids)
     
-    plot.plot(mfccs, centroids)
+    plot.plot(mfccs, centroids, classes)
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''

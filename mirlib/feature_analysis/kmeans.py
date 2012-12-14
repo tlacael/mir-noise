@@ -21,6 +21,9 @@ def GetNearestCentroids(data, centroids):
 
     return dist.argmin(axis=0)
 
+    #def GetVectorQuantizationStatistics(data, centroids):
+    
+
 class kmeans_runner:
     def __init__(self, k, end_thresh=0.01):
         ''' k is the number of centroids to use. '''
