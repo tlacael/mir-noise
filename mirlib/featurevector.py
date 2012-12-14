@@ -177,6 +177,9 @@ class feature_holder:
             return self.vector[timeind : (timeind + length), feature_start:feature_end]
         else:
             raise IndexError("Time Index out of range")
+
+    def get_event_start_indecies(self):
+        return self.time_dict.values()
         
     def save(self, filename):
         with open(filename, 'w+b') as f:
@@ -205,6 +208,6 @@ class feature_holder:
           "Name Map - %s\n" % str(self.vector_name_map) + \
           "Index Map - %s\n" % str(self.vector_index_map) + \
           "Length - %s\n" % str(self.vector_length) + \
-          "Time Mapping - %s\n" % str(self.time_dict) + \
           "Vector Shape - %s\n" % str(self.vector.shape) + \
           "---------------------------------\n"
+          #"Time Mapping - %s\n" % str(self.time_dict) + \

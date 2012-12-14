@@ -145,12 +145,20 @@ def clustering(args):
     mfccs = feature_holder.get_feature('mfcc')
 
     print feature_holder.vector.shape
-    centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
-    print "k-Means with k=%d run in %d iterations." % (k, nItr)
+    '''centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
+    print "k-Means with k=%d run in %d iterations." % (k, nItr)'''
 
-    classes = kmeans.vq(mfccs, centroids)
+    centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
+    print "Distortion for this run: %0.3f" % (distortion)
+
+    #classes = kmeans.vq(mfccs, centroids)
+    classes,dist = kmeans.scipy_vq(mfccs, centroids)
+    kmeans.print_vq_stats(mfccs, centroids)
+
+    eventIndecies = feature_holder.get_event_start_indecies()
+    eventIndecies = sorted([ x for x,y in eventIndecies])
     
-    plot.plot(mfccs, centroids, classes)
+    plot.plot(mfccs, eventIndecies, centroids, classes)
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
