@@ -106,7 +106,7 @@ def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
         X = M.spectrogram(eventSegments[i], fftParams.N, fftParams.h, fftParams.winfunc(fftParams.N))
 
         X = np.array(X)       
-        XmagDB = 20*np.log10(abs(X)) #take log magnitude
+        XmagDB = 20*np.log10(abs(X)+0.0000001) #take log magnitude
         
         mfcc = llspect.MFCC_Normalized(XmagDB, mfccParams, fftParams)
         mfccSegments.append(mfcc)
@@ -148,8 +148,10 @@ def clustering(args):
     centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)
 
+    print "vector quatization:"
     classes = kmeans.vq(mfccs, centroids)
     
+    print "plotting:"
     plot.plot(mfccs, centroids, classes)
 
 def ParseArgs():
