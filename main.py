@@ -49,7 +49,7 @@ def getfeatures(args):
     vector_template = [('sones', 0, 1),
                         ('mfcc', 1, nDCTCoefs - nIndexSkip)]
     # Initialize the feature vector holder
-    feature_holder = featurevector.feature_holder(vector_template)
+    feature_holder = featurevector.feature_holder(vector_template, filepath)
     
     print "Feature Extraction Mode\n"
     # For each chunk of audio
@@ -139,7 +139,6 @@ def clustering(args):
 
     feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
     k = args.k
-    thresh = args.stop_threshold
 
     print feature_holder
     mfccs = feature_holder.get_feature('mfcc')
@@ -155,10 +154,12 @@ def clustering(args):
     classes,dist = kmeans.scipy_vq(mfccs, centroids)
     kmeans.print_vq_stats(mfccs, centroids)
 
-    eventIndecies = feature_holder.get_event_start_indecies()
-    eventIndecies = sorted([ x for x,y in eventIndecies])
+    eventBeginnings = feature_holder.get_event_start_indecies()
     
-    plot.plot(mfccs, eventIndecies, centroids, classes)
+    if args.write_audio_results:
+        WriteAudioFromClasses(k, feature_holder, classes)
+    
+    #plot.plot(mfccs, eventBeginnings, centroids, classes)
 
 def feature_selection(args):
     print "Feature Analysis/Clustering Mode - featuer selection from multiple k's"
@@ -176,10 +177,39 @@ def feature_selection(args):
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
 
+        # do stuff here
+
         results.append( (k, distortion, dist) )
 
     print [ (a, b) for (a,b,c) in results]
-    #print results
+
+def WriteAudioFromClasses(k, feature_holder, classes):
+    index_time_map = feature_holder.get_index_time_map()
+    #print { k:index_time_map[k] for k in sorted(index_time_map.keys())}
+
+    # for each class k
+    segment_classes = GetClassFromSegment(k, index_time_map, classes)
+    for i in sorted(segment_classes.keys()):
+        # Find all time segments that go with this class
+        print i, sorted(segment_classes[i])
+
+        # Write all these time segments to a single file
+    
+def GetClassFromSegment(k, index_time_map, classes):
+    results = {}
+    for time_seg in sorted(index_time_map.keys()):
+        start = time_seg[0]
+        end = start + time_seg[1]
+        time_seg_classes = classes[ start : end ]
+        hist, edges = np.histogram( time_seg_classes, np.arange(k) )
+        segment_class = np.argmax(hist)
+        if results.has_key(segment_class):
+            results[segment_class].append(time_seg)
+        else:
+            results[segment_class] = [time_seg]
+
+    return results
+    
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
@@ -205,6 +235,7 @@ def ParseArgs():
     # Parameters for Clustering mode
     parser_clustering = subparsers.add_parser("clustering", help="Feature Analysis Mode")
     parser_clustering.add_argument("k", help="Number of classes", type=int)
+    parser_clustering.add_argument("-w", "--write_audio_results", help="Write audio from clusters", action="store_true")
     parser_clustering.set_defaults(func=clustering)
 
     args = parser.parse_args()

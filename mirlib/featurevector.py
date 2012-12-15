@@ -33,6 +33,10 @@ class feature_holder:
         else:
             if len(args) > 0:
                 vector_template = args[0]
+
+                self.filename = None
+                if len(args) > 1:
+                    self.filename = args[1]
             
                 self.vector_name_map, self.vector_index_map = self.construct_maps(vector_template)
                 self.vector_length = sum(self.vector_index_map.values())
@@ -179,10 +183,14 @@ class feature_holder:
             raise IndexError("Time Index out of range")
 
     def get_event_start_indecies(self):
-        return self.time_dict.values()
+        return sorted([x for x,y in self.time_dict.values()])
+
+    def get_index_time_map(self):
+        return {v:k for k, v in self.time_dict.items()}
         
     def save(self, filename):
         with open(filename, 'w+b') as f:
+            np.save(f, self.filename)
             np.save(f, self.vector_name_map)
             np.save(f, self.vector_index_map)
             np.save(f, self.vector_length)
@@ -196,6 +204,7 @@ class feature_holder:
 
     def load(self, filename):
         with open(filename, 'r+b') as f:
+            self.filename = np.load(f).item()
             self.vector_name_map = dict(np.load(f).item())
             self.vector_index_map = dict(np.load(f).item())
             self.vector_length = np.load(f).item()
@@ -205,6 +214,7 @@ class feature_holder:
     def __str__( self ):
         return "vector_holder instance\n" + \
           "---------------------------------\n" + \
+          "Reference audio file - %s\n" % (self.filename) + \
           "Name Map - %s\n" % str(self.vector_name_map) + \
           "Index Map - %s\n" % str(self.vector_index_map) + \
           "Length - %s\n" % str(self.vector_length) + \
