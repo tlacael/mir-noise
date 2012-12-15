@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import euclidean
+import scipy.cluster.vq
 
 def euclid_dist(vec1, vec2):
     if vec1.ndim == 2:
@@ -91,4 +92,18 @@ def kmeans(data, k, thresh):
 def vq(data, centroids):
     return GetNearestCentroids(data, centroids)
     
-    
+def scipy_kmeans(data, k):
+    return scipy.cluster.vq.kmeans(data, k)
+
+def scipy_vq(data, centroids):
+    return scipy.cluster.vq.vq(data, centroids)
+
+def print_vq_stats(data, centroids):
+    idx, dist = scipy_vq(data, centroids)
+
+    print "Mean & Std Dev Dist to Centroid for each class:"
+    for i in range(len(centroids)):
+        meanDist = dist[idx==i].mean()
+        stdDist = dist[idx==i].std()
+        print "class %d: %0.3f %0.3f" % (i, meanDist, stdDist)
+
