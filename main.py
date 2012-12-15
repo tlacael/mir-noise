@@ -59,7 +59,7 @@ def getfeatures(args):
         if debug: print "Read %d sample chunk of audio (%0.2fs)" % (len(audioChunk), len(audioChunk) / fs)
 
         # Get Events
-        eventTimes = GetEvents(audioChunk, fs, debug)
+        eventTimes = GetEvents(audioChunk, fftParams, debug)
         if debug: print "EVENTTIMES:", eventTimes
         eventTimesSamps = np.asarray(np.multiply(eventTimes,fs),dtype=int)
 
@@ -82,12 +82,12 @@ def getfeatures(args):
     fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
     print "Wrote", fileSize, "bytes to disk."
 
-def GetEvents(audiodata, fs, debug):
+def GetEvents(audiodata, fftParams, debug):
     # Get Onsets
-    onsetDetector = ed.onsetDetect(audiodata,fs)
+    onsetDetector = ed.onsetDetect(fftParams)
         
     # Get Time-Segments from those offsets
-    return onsetDetector.findEventLocations()
+    return onsetDetector.findEventLocations(audiodata)
 
 def GetEventAudioSegments(eventTimes, audiodata, debug):
     ''' eventTimes must be in samples!!! '''
@@ -134,7 +134,7 @@ def StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, ch
         feature_holder.add_feature('mfcc', thismfcc, timelabel=timekey)
 
 def clustering(args):
-    print "Feature Analysis/Clustering Mode"
+    print "Feature Analysis/Clustering Mode: single k"
 
     feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
     k = args.k
@@ -159,6 +159,26 @@ def clustering(args):
     
     plot.plot(mfccs, eventIndecies, centroids, classes)
 
+def feature_selection(args):
+    print "Feature Analysis/Clustering Mode - featuer selection from multiple k's"
+
+    feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
+    kMin = args.k_min
+    kMax = args.k_max
+    kHop = args.k_hop
+
+    mfccs = feature_holder.get_feature('mfcc')
+
+    results = []
+    for k in range(kMin, kMax, kHop):
+        centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
+
+        classes, dist = kmeans.scipy_vq(mfccs, centroids)
+
+        results.append( (k, distortion, dist) )
+
+    print [ (a, b) for (a,b,c) in results]
+    #print results
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
@@ -174,10 +194,16 @@ def ParseArgs():
     parser_getfeatures.add_argument("audiofile", help="Input audio file path")
     parser_getfeatures.add_argument("-l", "--audio_seg_length", help="Amount of audio data to process at a time", default=30, type=int)
 
+    # Parameters for Feature Selection
+    parser_featureselection = subparsers.add_parser("featureselect", help="Feature Selection Mode")
+    parser_featureselection.add_argument("k_min", default=2, type=int)
+    parser_featureselection.add_argument("k_max", default=100, type=int)
+    parser_featureselection.add_argument("k_hop", default=5, type=int)
+    parser_featureselection.set_defaults(func=feature_selection)
+
     # Parameters for Clustering mode
     parser_clustering = subparsers.add_parser("clustering", help="Feature Analysis Mode")
     parser_clustering.add_argument("k", help="Number of classes", type=int)
-    parser_clustering.add_argument("-T", "--stop_threshold", help="Threshold to stop iterating k-means", default=0.01, type=float)
     parser_clustering.set_defaults(func=clustering)
 
     args = parser.parse_args()

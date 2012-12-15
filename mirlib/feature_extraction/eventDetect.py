@@ -18,14 +18,14 @@ class onsetDetect:
         self.fftParams = fftParams        
         self.fs = fftParams.fs
         
-    def envelopeFollowEnergy(self, winLen, hopSize):
+    def envelopeFollowEnergy(self, x, winLen, hopSize):
         self.winLen = winLen
         self.hopSize = hopSize
         
         xPad = zeros(self.winLen/2)
 
        # size(xPad,1) = size(self.x,1)
-        xPad = concatenate([xPad, self.x, xPad])
+        xPad = concatenate([xPad, x, xPad])
         
         xBuf = M.shingle(xPad, self.winLen, self.hopSize)
         xBuf.shape = (size(xBuf,0), size(xBuf,1))
@@ -44,8 +44,7 @@ class onsetDetect:
         return self.xLocEnrg
     
     def GetTimeEnvelope(self, x):
-        #self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
-
+        
         # pad the beginning and end with zeros so we fix time issues
         xPad = zeros(self.fftParams.N/2)
         xPad = concatenate([xPad, x, xPad])
@@ -77,9 +76,11 @@ class onsetDetect:
         spect_fs = len(x) / np.float(self.fftParams.N)
 
         #set 2 second window for strong smoothing
-        smoothingWinLen = spect_fs*0.5
+        smoothingWinLen = self.fftParams.fs*0.5
         smoothingHopSize = smoothingWinLen/2.
-S        envelope = self.GetTimeEnvelope(x)
+        #envelope = self.GetTimeEnvelope(x)
+
+        self.EnvSmooth = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
 
         # CBJ : Do we really need smoothing now? and if so, by how much? we're already
         # getting a 2048 sample value, which is about .05s. We'd only need like 10 of these
@@ -89,11 +90,11 @@ S        envelope = self.GetTimeEnvelope(x)
         #return envelope, self.EnvSmooth
         
         #normalize
-        #self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
+        self.EnvSmooth = divide(self.EnvSmooth, self.EnvSmooth.max()) 
         #thresh = mean(EnvSmooth)
 
-        EnvThresh = envelope           
-        #EnvThresh = self.EnvSmooth   
+        #EnvThresh = envelope           
+        EnvThresh = self.EnvSmooth   
         thresh = median(EnvThresh)*1.4
         
         EnvThresh[EnvThresh<thresh]=0
