@@ -76,7 +76,8 @@ def getfeatures(args):
         StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
 
         if chunkIndex > 16:
-            break;
+            pass
+            #break;
         
     # Write features to disk
     fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
