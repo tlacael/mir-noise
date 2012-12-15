@@ -73,7 +73,7 @@ class onsetDetect:
         if x.ndim == 2 and x.shape[1] == 1:
             x.shape = (x.shape[0])
 
-        spect_fs = len(x) / np.float(self.fftParams.N)
+        spect_fs = self.fftParams.fs / np.float(self.fftParams.N)
 
         #set 2 second window for strong smoothing
         smoothingWinLen = self.fftParams.fs*0.5
