@@ -20,9 +20,9 @@ def SpectralFlux(X, fftParams, bRectified=True):
     diffX = np.diff(X, axis=0)
 
     if bRectified:
-        diffX = mir_utils.HalfWaveRect(diffX)
+        diffX = mir_utils.HalfWaveRectify(diffX)
 
-    return (2 / N) * np.sum(diffX[:, :(N/2)], axis=1)
+    return (2 / np.float(N)) * np.sum(diffX[:, :(N/2)], axis=1)
 
 def SpectralCentroid(x, fftParams):
     ''' x is a time-domain signal. Takes the FFT and returns the vector of spectral

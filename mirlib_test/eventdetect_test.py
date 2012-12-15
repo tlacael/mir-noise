@@ -19,31 +19,21 @@ zp = 0
 winfunc=np.hamming
 fftParams = fftparams.FFTParams(fs, N, hopDenom, zp, winfunc)
 
-
-smoothingWinLen = fs
-smoothingHopSize = smoothingWinLen/2. 
-print smoothingWinLen, smoothingHopSize, fs
-
-z = ed.onsetDetect(x, fs)
-#peaks = z.envelopeFollowEnergy(winLen,hopSize)
-events = z.findEventLocations()
-
-print "calculated events:", events
+#peaks = z.envelopeFollowEnergy(winLen,hopSize) # the old way
+z = ed.onsetDetect(fftParams)
+events = z.findEventLocations(x)
 
 events = np.multiply(events,fs)
-print "converted events:", events
 
-
-hop = 1000
-timeX = arange(z.x.size)
-timeX.shape = z.x.shape
+hop = 100
+timeX = arange(x.size)
+timeX.shape = x.shape
 timeX = np.divide(timeX, np.float(fs))
-timeX.shape = z.x.shape
+timeX.shape = x.shape
 print "Plotting..."
 fig = figure()
 ax1 = fig.add_subplot(111)
-ax1.plot(timeX[::hop], z.x[::hop], color='r')
-
+ax1.plot(timeX[::hop], x[::hop], color='r')
 
 #plot envelope
 #peaks = divide(peaks,peaks.max())
@@ -60,4 +50,5 @@ for i in range(size(events,0)):
 ax1.plot(timeX[::hop],eventPlot[::hop])
 print timeX.shape, eventPlot.shape, timeX[::hop].shape, eventPlot[::hop].shape
 print "show..."
+
 show()
