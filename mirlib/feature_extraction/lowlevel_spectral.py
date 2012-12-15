@@ -59,15 +59,18 @@ def MFCC(X, mfccParams, fftParams):
     ''' Take the MFCC of X, return the matrix of Cepstrum coeficients. 
     X is the 2d spectrogram (FFT frames)
     '''
-
+    X = np.array(X)  
     nFrames = X.shape[0]
     nFFT = X.shape[1]
+     
+     # take magnitude and put into DB
+    XmagDB = 20*np.log10(abs(X)+0.0000001)
 
     # Get the Mel Filterbank
     filters = wm.MelFilterBank(nFFT, mfccParams.nFilters, mfccParams.minFreq, mfccParams.maxFreq, fftParams)
 
     # Multiply the Mel Filterbank by the spectrogram to get the Mel Spectrogram
-    melSpect = X.dot(filters.transpose())
+    melSpect = XmagDB.dot(filters.transpose())
 
     # Get the DCT Matrix
     dctMatrix = mir_utils.GetDCTMatrix(mfccParams.nFilters, mfccParams.nDCTCoefs)
@@ -75,13 +78,14 @@ def MFCC(X, mfccParams, fftParams):
     # Multilpy the Mel Spectrogram by the DCT Matrix to get the MFCC
     mfcc = melSpect.dot(dctMatrix.T)
     
-    return mfcc
+    return mfcc[:,2:]
 
 def MFCC_Normalized(X, mfccParams, fftParams):
     
     mfcc = MFCC(X, mfccParams, fftParams)
     
+    
     # Remove the end of the mfcc to clear up the data before normalizing
-    mfcc_norm = mir_utils.Normalize(mfcc[:, mfccParams.nIndexSkip:])
+    mfcc_norm = mir_utils.Normalize2(mfcc)
 
     return mfcc_norm

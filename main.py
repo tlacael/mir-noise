@@ -105,10 +105,9 @@ def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
     for i in np.arange(len(eventSegments)):
         X = M.spectrogram(eventSegments[i], fftParams.N, fftParams.h, fftParams.winfunc(fftParams.N))
 
-        X = np.array(X)       
-        XmagDB = 20*np.log10(abs(X)) #take log magnitude
+        #take log magnitude
         
-        mfcc = llspect.MFCC_Normalized(XmagDB, mfccParams, fftParams)
+        mfcc = llspect.MFCC_Normalized(X, mfccParams, fftParams)
         mfccSegments.append(mfcc)
         if debug:
             print "\t MFCC:", mfcc.shape
@@ -159,6 +158,7 @@ def clustering(args):
     eventIndecies = sorted([ x for x,y in eventIndecies])
     
     plot.plot(mfccs, eventIndecies, centroids, classes)
+
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
