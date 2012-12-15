@@ -120,15 +120,22 @@ class onsetDetect:
         self.peakTimes = array((self.peakTimes))
         
         return self.peakTimes[1,:]
+
+    def GetTimeEnvelope():
+        pass
+
+    def SmoothEnvelope():
+        pass
+        
         
     def findEventLocations(self):
         #set 2 second window for strong smoothing
         winLen = self.fs*0.5
         hopSize = winLen/2.
 
-        envelope = self.GetTimeEnvelope()
-        self.EnvSmooth = self.SmoothEnvelope(envelope)
-        #self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
+        #envelope = self.GetTimeEnvelope()
+        #self.EnvSmooth = self.SmoothEnvelope(envelope)
+        self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
         
         #normalize
         #self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
