@@ -12,6 +12,18 @@ import numpy as np
 from .. import mir_utils
 from .. import windowmanager as wm
 
+def SpectralFlux(X, fftParams, bRectified=True):
+    ''' Spectral Flux SF(m) = (2/N) sum[0:N/2] H(|Xk(m)| - |Xk(m-1)|)
+    H(x) = (x + |x|) / 2'''
+    N = fftParams.N
+    magX = abs(X)
+    diffX = np.diff(X, axis=0)
+
+    if bRectified:
+        diffX = mir_utils.HalfWaveRect(diffX)
+
+    return (2 / N) * np.sum(diffX[:, :(N/2)], axis=1)
+
 def SpectralCentroid(x, fftParams):
     ''' x is a time-domain signal. Takes the FFT and returns the vector of spectral
     centroids, based on the fftParams given. '''

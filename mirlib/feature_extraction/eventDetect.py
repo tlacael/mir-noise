@@ -10,8 +10,6 @@ import marlib.matlab as M
 import scipy as sp
 import math
 
-
-
 class onsetDetect:
     
     def __init__(self, x, fs):
@@ -127,8 +125,10 @@ class onsetDetect:
         #set 2 second window for strong smoothing
         winLen = self.fs*0.5
         hopSize = winLen/2.
-        
-        self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
+
+        envelope = self.GetTimeEnvelope()
+        self.EnvSmooth = self.SmoothEnvelope(envelope)
+        #self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
         
         #normalize
         #self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
