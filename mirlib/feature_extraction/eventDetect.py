@@ -9,62 +9,27 @@ from matplotlib.pyplot import *
 import marlib.matlab as M
 import scipy as sp
 import math
+import lowlevel_spectral as llspect
 
 class onsetDetect:
     
-    def __init__(self, x, fs):
-        
-        if x.ndim == 2 and x.shape[1] == 1:
-            x.shape = (x.shape[0])            
+    def __init__(self, fftParams):
             
-        self.x = x
-        self.fs = fs
-
-    def envelopeFollow(self, winLen, hopSize):
+        self.fftParams = fftParams        
+        self.fs = fftParams.fs
+        
+    def envelopeFollowEnergy(self, x, winLen, hopSize):
         self.winLen = winLen
         self.hopSize = hopSize
-
-    
-    
-        xPad = zeros((self.winLen/2))
-
-      #  size(xPad,1) = size(self.x,1)
-        xPad = concatenate([xPad, self.x])
-            
-        
-        xBuf = M.shingle(xPad, self.winLen, self.hopSize)
-        xBuf.shape = (size(xBuf,0), size(xBuf,1))
-        featureLen = size(xBuf, 0)
-        
-        #creat window
-        win = hanning(self.winLen)
-        self.winMat = tile(win, (featureLen, 1))
-        
-        #window buffers
-        self.xBuf = xBuf * win
-        
-        #square and mean
-        self.xEnvelope = mean(abs(self.xBuf),1)
-        
-        return self.xEnvelope
-    
-        
-    def envelopeFollowEnergy(self, winLen, hopSize):
-        self.winLen = winLen
-        self.hopSize = hopSize
-        
-
         
         xPad = zeros(self.winLen/2)
-        
 
        # size(xPad,1) = size(self.x,1)
-        xPad = concatenate([xPad, self.x, xPad])
+        xPad = concatenate([xPad, x, xPad])
         
         xBuf = M.shingle(xPad, self.winLen, self.hopSize)
         xBuf.shape = (size(xBuf,0), size(xBuf,1))
         featureLen = size(xBuf, 0)
-        
         
         #creat window
         win = hanning(self.winLen)
@@ -78,64 +43,58 @@ class onsetDetect:
         
         return self.xLocEnrg
     
-    def logDeriv(self):
+    def GetTimeEnvelope(self, x):
+        
+        # pad the beginning and end with zeros so we fix time issues
+        xPad = zeros(self.fftParams.N/2)
+        xPad = concatenate([xPad, x, xPad])
+        
+        X = M.spectrogram(xPad, self.fftParams.N, self.fftParams.h, self.fftParams.winfunc(self.fftParams.N))
 
-        xLogDeriv = zeros(size(self.xLocEnrg))
+        return llspect.SpectralFlux(X, self.fftParams)
+
+    def SmoothEnvelope(self, envelope, window_len, hop_size):
+        xPad = zeros(window_len/2)
+
+       # size(xPad,1) = size(self.x,1)
+        xPad = concatenate([xPad, envelope, xPad])
+
+        # Iterate over xPad and smooth with a window
+        xBuf = M.shingle(xPad, window_len, hop_size)
+
+        xBufSmoothed = median(xBuf, axis=1)
         
-        xLogDeriv[0:-1] = log(self.xLocEnrg[1:]) - log(self.xLocEnrg[0:-1])
-        xLogDeriv[-1] = 0
+        return xBufSmoothed
         
-        xLogDeriv[abs(self.xLocEnrg) < mean(abs(self.xLocEnrg))] = 0
-         
-        self.xLogDeriv = xLogDeriv
         
-        return self.xLogDeriv
-    
-    def pickPeaks(self, peakMatrix):
-        
-        self.peakMatrix = peakMatrix/max(peakMatrix)
-        self.peakMatrix.shape = (1, size(self.peakMatrix))
-        
-        #set up padding for shifting register
-        halfLen = 4
-        self.zeroPad = zeros([1,halfLen])
-        self.peakWin = size(self.zeroPad,1)*2+1;
-        
-        self.buff = concatenate((self.zeroPad,self.peakMatrix,self.zeroPad),1)
-        self.maxMatrix = zeros([self.peakWin,size(self.peakMatrix,1)])
-        
-        for i in range(self.peakWin):
-            if i == self.peakWin - 1:
-                self.maxMatrix[i,:] = self.buff[0,i:]
-            else:
-                self.maxMatrix[i,:] = self.buff[0,i:1-self.peakWin+i] 
-            
-        self.maxMatrix[self.maxMatrix==0] = -1
-        
-        self.maxMatrix = self.maxMatrix.max(0)
-        
-        self.compare = self.maxMatrix == self.peakMatrix
-        
-        self.peakTimes = nonzero(self.compare)
-        self.peakTimes = array((self.peakTimes))
-        
-        return self.peakTimes[1,:]
-        
-    def findEventLocations(self):
+    def findEventLocations(self, x):
+        # Do this to make sure it works for both our machines.
+        # sometimes x is (n, 1) and sometimes x is (n,). Dunno why.
+        if x.ndim == 2 and x.shape[1] == 1:
+            x.shape = (x.shape[0])
+
+        spect_fs = self.fftParams.fs / np.float(self.fftParams.N)
+
         #set 2 second window for strong smoothing
-        winLen = self.fs*0.5
-        hopSize = winLen/2.
+        smoothingWinLen = self.fftParams.fs*0.5
+        smoothingHopSize = smoothingWinLen/2.
+        #envelope = self.GetTimeEnvelope(x)
 
-        envelope = self.GetTimeEnvelope()
-        self.EnvSmooth = self.SmoothEnvelope(envelope)
-        #self.EnvSmooth = self.envelopeFollowEnergy(winLen, hopSize)
+        self.EnvSmooth = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
+
+        # CBJ : Do we really need smoothing now? and if so, by how much? we're already
+        # getting a 2048 sample value, which is about .05s. We'd only need like 10 of these
+        # to get a half second of smoothing; more than that is not really useful at this stage;
+        # we'd loose too much resolution on events.
+        #self.EnvSmooth = self.SmoothEnvelope(envelope, smoothingWinLen, smoothingHopSize)
+        #return envelope, self.EnvSmooth
         
         #normalize
-        #self.EnvSmooth = divide(EnvSmooth, EnvSmooth.max()) 
+        self.EnvSmooth = divide(self.EnvSmooth, self.EnvSmooth.max()) 
         #thresh = mean(EnvSmooth)
-        
-        
-        EnvThresh = self.EnvSmooth
+
+        #EnvThresh = envelope           
+        EnvThresh = self.EnvSmooth   
         thresh = median(EnvThresh)*1.4
         
         EnvThresh[EnvThresh<thresh]=0
@@ -146,7 +105,9 @@ class onsetDetect:
     
         lengths = zeros((EventCenters.size,2))
         count = 0
-        len=0
+
+        
+        #len=0  # len is probably not a good name for a variable, since it's a built-in function
         
         '''
         for sample in arange(EnvThresh.size):
@@ -172,9 +133,9 @@ class onsetDetect:
         EventTimes = zeros((self.numberOfEvents,2))
         eventIndex = arange(self.numberOfEvents)
         
-        chunkLen = self.x.size/self.fs
+        chunkLen = x.size/self.fs
         print "signal length", chunkLen
-        print "signal size", self.x.size
+        print "signal size", x.size
         
         
         #convert event centers to time windows in seconds
@@ -183,10 +144,10 @@ class onsetDetect:
         padAdjust = 0.5
 
         for i in eventIndex:
-            EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*hopSize/float(self.fs)-widen
+            EventTimes[i,0] = (EventCenters[0,i] - 0.5 - padAdjust)*smoothingHopSize/float(self.fs)-widen
             if EventTimes[i,0] < 0:
                 EventTimes[i,0] = 0
-            EventTimes[i,1] = (EventCenters[0,i] + 0.5- padAdjust)*hopSize/float(self.fs)+widen
+            EventTimes[i,1] = (EventCenters[0,i] + 0.5- padAdjust)*smoothingHopSize/float(self.fs)+widen
             if EventTimes[i,1] > chunkLen:
                 EventTimes[i,1] = chunkLen
             
@@ -215,14 +176,53 @@ class onsetDetect:
                 reducedEvents[i,:] = temp[i+offset,:]
                 i+=1
                 
-
-        
-             
         self.reducedEvents = reducedEvents[:-offset-1,:]
         self.numberOfEvents = size(self.reducedEvents,0)  
             
         return self.reducedEvents
-       
+
+    '''
+        #THIS CODE DOES NOT SEEM TO BE IN USE. TRUE?
+        
+    def envelopeFollow(self, winLen, hopSize):
+        self.winLen = winLen
+        self.hopSize = hopSize
+    
+        xPad = zeros((self.winLen/2))
+
+      #  size(xPad,1) = size(x,1)
+        xPad = concatenate([xPad, x])
+            
+        
+        xBuf = M.shingle(xPad, self.winLen, self.hopSize)
+        xBuf.shape = (size(xBuf,0), size(xBuf,1))
+        featureLen = size(xBuf, 0)
+        
+        #creat window
+        win = hanning(self.winLen)
+        self.winMat = tile(win, (featureLen, 1))
+        
+        #window buffers
+        self.xBuf = xBuf * win
+        
+        #square and mean
+        self.xEnvelope = mean(abs(self.xBuf),1)
+        
+        return self.xEnvelope
+
+    def logDeriv(self):
+
+        xLogDeriv = zeros(size(self.xLocEnrg))
+        
+        xLogDeriv[0:-1] = log(self.xLocEnrg[1:]) - log(self.xLocEnrg[0:-1])
+        xLogDeriv[-1] = 0
+        
+        xLogDeriv[abs(self.xLocEnrg) < mean(abs(self.xLocEnrg))] = 0
+         
+        self.xLogDeriv = xLogDeriv
+        
+        return self.xLogDeriv
+'''    
         
         
 ''' Test script
