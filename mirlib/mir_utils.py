@@ -50,12 +50,36 @@ def HalfWaveRectify(x):
 
 def Normalize(x):
     ''' Returns x - min(x) / max(x - min(x)), operating in the last dimension '''
-    ax = np.asarray(x, dtype=float)
+    xAbs = abs(x)
+    ax = np.asarray(xAbs, dtype=float)
     opAxis = len(ax.shape) - 1
     '''x_m = (ax.T - ax.min(axis=opAxis)).T
     return (x_m.T / (x_m).max(axis=opAxis)).T'''
     return (x.T / x.max(axis=opAxis)).T
+
+def Normalize2(x):
+
+    # take abs
+    maxMat = np.abs(x)
+    #find max
+    maxMat = maxMat.max(1)
+    #tile
+    maxMat = np.tile(maxMat, ( x.shape[1], 1))
+    #divide
+    norm = x/maxMat.T;
+    return norm
     
+    '''
+    ----------------------------
+    # take abs
+    maxMat = np.abs(mfcc)
+    #find max
+    maxMat = maxMat.max(1)
+    #tile
+    maxMat = np.tile(np.abs(maxMat), ( mfcc.shape[1], 1))
+    #divide
+    mfccNorm = mfcc/maxMat.T;
+    '''
 
 def PrintDataStats(data, title=''):
     dim = data.ndim
@@ -134,9 +158,9 @@ def MatrixDFT(x, fftParams):
     
 def GetDCTMatrix(nFilters, dctWindowSize):
 
-    N = np.float(nFilters)
-    n = arange(nFilters)
-    k = arange(dctWindowSize)
+    N = np.float(nFilters)#freq bins
+    n = arange(nFilters)+1
+    k = arange(dctWindowSize) #coeffs
 
     dctMatrix = np.ones([dctWindowSize, nFilters])
 
