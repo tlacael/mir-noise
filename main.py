@@ -176,23 +176,26 @@ def feature_selection(args):
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
 
-        # do stuff here
-
         results.append( (k, distortion, dist) )
 
-    print [ (a, b) for (a,b,c) in results]
+    print [ (a) for (a,b,c) in results]
 
 def WriteAudioFromClasses(k, feature_holder, classes):
     index_time_map = feature_holder.get_index_time_map()
     #print { k:index_time_map[k] for k in sorted(index_time_map.keys())}
+    print "Original File:", feature_holder.filename
 
     # for each class k
     segment_classes = GetClassFromSegment(k, index_time_map, classes)
     for i in sorted(segment_classes.keys()):
         # Find all time segments that go with this class
-        print i, sorted(segment_classes[i])
+        timeSegments = [ index_time_map[j] for j  in sorted(segment_classes[i])]
 
+        print timeSegments
         # Write all these time segments to a single file
+        audioSegments, fs = af.get_arbitrary_file_segments(feature_holder.filename, timeSegments)
+        resultDir = './results'
+        af.write_segment_audio("%s/class-%d.wav" % (resultDir, i), audioSegments, fs)
     
 def GetClassFromSegment(k, index_time_map, classes):
     results = {}
@@ -208,7 +211,6 @@ def GetClassFromSegment(k, index_time_map, classes):
             results[segment_class] = [time_seg]
 
     return results
-    
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''
