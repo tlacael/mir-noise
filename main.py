@@ -153,8 +153,6 @@ def clustering(args):
 
     #classes = kmeans.vq(mfccs, centroids)
     classes,dist = kmeans.scipy_vq(mfccs, centroids)
-    
-    
     kmeans.print_vq_stats(mfccs, centroids)
 
     eventBeginnings = feature_holder.get_event_start_indecies()
@@ -164,10 +162,6 @@ def clustering(args):
     
     plot.plot(mfccs, eventBeginnings, centroids, classes)
     #print "J: ", calcJ(mfccs,classes, centroids,k)
-
-    
-
-
 
 def calcJ(mfccs, classes, centroids, k):
     
@@ -197,20 +191,12 @@ def calcJ(mfccs, classes, centroids, k):
         meanOfClass = np.mean(mfccs[classes==i],0)
         diff = meanOfClass - globalMean
         Sb += np.outer(diff,diff)
-    
-    
-    
+        
     SWsumDiag = sum(np.diag(Sw))
-
     SBsumDiag = sum(np.diag(Sb))
 
     return SBsumDiag/SWsumDiag
     
-    
-    
-    
-    
-
 def feature_selection(args):
     print "Feature Analysis/Clustering Mode - featuer selection from multiple k's"
 
@@ -228,28 +214,33 @@ def feature_selection(args):
         centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
-        
+
         j_measures[k-kMin] = calcJ(mfccs, classes, centroids, k)
-            
         results.append( (k, distortion, dist) )
+
+    #print [ (a) for (a,b,c) in results]
 
     print "jMeasures", j_measures
     plt.close()
     plt.plot(j_measures);plt.show()
     #print [ (a, b) for (a,b,c) in results]
     
-
 def WriteAudioFromClasses(k, feature_holder, classes):
     index_time_map = feature_holder.get_index_time_map()
     #print { k:index_time_map[k] for k in sorted(index_time_map.keys())}
+    print "Original File:", feature_holder.filename
 
     # for each class k
     segment_classes = GetClassFromSegment(k, index_time_map, classes)
     for i in sorted(segment_classes.keys()):
         # Find all time segments that go with this class
-        print i, sorted(segment_classes[i])
+        timeSegments = [ index_time_map[j] for j  in sorted(segment_classes[i])]
 
+        print timeSegments
         # Write all these time segments to a single file
+        audioSegments, fs = af.get_arbitrary_file_segments(feature_holder.filename, timeSegments)
+        resultDir = './results'
+        af.write_segment_audio("%s/class-%d.wav" % (resultDir, i), audioSegments, fs)
     
 def GetClassFromSegment(k, index_time_map, classes):
     results = {}
@@ -265,7 +256,6 @@ def GetClassFromSegment(k, index_time_map, classes):
             results[segment_class] = [time_seg]
 
     return results
-    
 
 def ParseArgs():
     ''' Parse the program arguments & run the appropriate functions '''

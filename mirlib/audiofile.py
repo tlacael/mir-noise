@@ -55,3 +55,34 @@ def segment_audio_files(filepath, segment_length, result_dir=RESULT_DIR):
         print "Writing %s..." % (outFile),
         M.wavwrite(segment, outFile, afm.afReader.samplerate())
         print "...done."
+
+def get_arbitrary_file_segments(readfilepath, segmentList):
+    ''' filepath contains the input files
+    segment list is a list of (start point, length), in seconds '''
+    print "reading", segmentList, "from", readfilepath
+
+    afReader = af.AudioReader(readfilepath)
+    fs = afReader.samplerate()
+
+    sampleSegmentList = [ (x * fs, l * fs) for x, l in segmentList]
+
+    audio_segments = [ afReader.read_frame_at_index(np.int(x), np.int(l)) for x, l in sampleSegmentList ]
+    afReader.close()
+    return audio_segments, fs
+
+def write_segment_audio(writefilepath, audioSegments, fs):
+    print "Writing", len(audioSegments), "audio segments to", writefilepath
+
+    fileDir = os.path.dirname(writefilepath)
+    fileName = os.path.basename(writefilepath)
+    if not os.path.exists(fileDir):
+        os.makedirs(fileDir)
+        
+    afWriter = af.AudioWriter(writefilepath, samplerate=fs)
+
+    for segment in audioSegments:
+        afWriter.write_frame(segment)
+        # Append some silence
+        afWriter.write_frame( np.zeros( .5 * afWriter.samplerate()) )
+
+    afWriter.close()
