@@ -215,7 +215,6 @@ def feature_selection(args):
     
 def WriteAudioFromClasses(k, feature_holder, classes):
     index_time_map = feature_holder.get_index_time_map()
-    #print { k:index_time_map[k] for k in sorted(index_time_map.keys())}
     print "Original File:", feature_holder.filename
 
     # for each class k
