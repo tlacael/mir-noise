@@ -17,6 +17,7 @@ import mirlib.feature_extraction.eventDetect as ed
 import mirlib.feature_extraction.lowlevel_spectral as llspect
 from mirlib.feature_analysis import kmeans
 import plot
+from matplotlib import pyplot as plt
 
 FEATURE_VECTOR_FILENAME = "features.npy"
 
@@ -76,7 +77,8 @@ def getfeatures(args):
         StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
 
         if chunkIndex > 16:
-            break;
+            pass
+            #break;
         
     # Write features to disk
     fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
@@ -158,8 +160,31 @@ def clustering(args):
     if args.write_audio_results:
         WriteAudioFromClasses(k, feature_holder, classes)
     
-    #plot.plot(mfccs, eventBeginnings, centroids, classes)
+    plot.plot(mfccs, eventBeginnings, centroids, classes)
+    print "J: ", calcJ(mfccs,classes, centroids,k)
 
+def calcJ(mfccs, classes, centroids, k):
+    
+    Sw = np.ones((mfccs.shape[1],mfccs.shape[1]))
+    Sb = np.ones((mfccs.shape[1],mfccs.shape[1]))
+    
+    for i in range(k):
+        #sw
+        proportion = np.sum(classes==i)/float(classes.size)
+        covar = np.cov(mfccs[classes==0], rowvar=0)
+        Sw += np.multiply(proportion,covar)
+        
+        #Sb
+        globalMean = np.mean(mfccs, 0)
+        meanOfClass = np.mean(mfccs[classes==i],0)
+        diff = meanOfClass - globalMean
+        Sb += np.outer(diff,diff)
+        
+    SWsumDiag = sum(np.diag(Sw))
+    SBsumDiag = sum(np.diag(Sb))
+
+    return SBsumDiag/SWsumDiag
+    
 def feature_selection(args):
     print "Feature Analysis/Clustering Mode - featuer selection from multiple k's"
 
@@ -171,15 +196,23 @@ def feature_selection(args):
     mfccs = feature_holder.get_feature('mfcc')
 
     results = []
+    j_measures = np.zeros(kMax- kMin)
+    
     for k in range(kMin, kMax, kHop):
         centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
 
+        j_measures[k-kMin] = calcJ(mfccs, classes, centroids, k)
         results.append( (k, distortion, dist) )
 
-    print [ (a) for (a,b,c) in results]
+    #print [ (a) for (a,b,c) in results]
 
+    print "jMeasures", j_measures
+    plt.close()
+    plt.plot(j_measures);plt.show()
+    #print [ (a, b) for (a,b,c) in results]
+    
 def WriteAudioFromClasses(k, feature_holder, classes):
     index_time_map = feature_holder.get_index_time_map()
     #print { k:index_time_map[k] for k in sorted(index_time_map.keys())}
@@ -238,6 +271,8 @@ def ParseArgs():
     parser_clustering.add_argument("k", help="Number of classes", type=int)
     parser_clustering.add_argument("-w", "--write_audio_results", help="Write audio from clusters", action="store_true")
     parser_clustering.set_defaults(func=clustering)
+    
+
 
     args = parser.parse_args()
     args.func(args)

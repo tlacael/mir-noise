@@ -5,7 +5,8 @@ import mirlib.feature_extraction.eventDetect as ed
 import mirlib.FFTParams as fftparams
 from matplotlib.pylab import *
 
-inputfile = '../audio/GV02_A_Format4min.wav'
+#inputfile = '../audio_files/GV02_A_Format4min.wav'
+inputfile = '../audio_files/wburgShort.wav'
 
 if not os.path.exists(inputfile):
     raise Exception("FILE DOES NOT EXIST, TRY AGAIN")
@@ -21,34 +22,39 @@ fftParams = fftparams.FFTParams(fs, N, hopDenom, zp, winfunc)
 
 #peaks = z.envelopeFollowEnergy(winLen,hopSize) # the old way
 z = ed.onsetDetect(fftParams)
+
+
 events = z.findEventLocations(x)
 
-events = np.multiply(events,fs)
+makePlot = 1
 
-hop = 100
-timeX = arange(x.size)
-timeX.shape = x.shape
-timeX = np.divide(timeX, np.float(fs))
-timeX.shape = x.shape
-print "Plotting..."
-fig = figure()
-ax1 = fig.add_subplot(111)
-ax1.plot(timeX[::hop], x[::hop], color='r')
-
-#plot envelope
-#peaks = divide(peaks,peaks.max())
-#envTime = arange(size(peaks))
-#nvTime = divide(envTime,fs/float(hopSize))
-#envTime.shape = peaks.shape
-#plot(envTime,peaks);show()
-
-
-eventPlot = np.zeros(size(timeX))
-for i in range(size(events,0)):
-    eventPlot[events[i,0]:events[i,1]]=0.7
+if makePlot:
+    events = np.multiply(events,fs)
     
-ax1.plot(timeX[::hop],eventPlot[::hop])
-print timeX.shape, eventPlot.shape, timeX[::hop].shape, eventPlot[::hop].shape
-print "show..."
-
-show()
+    hop = 100
+    timeX = arange(x.size)
+    timeX.shape = x.shape
+    timeX = np.divide(timeX, np.float(fs))
+    timeX.shape = x.shape
+    print "Plotting..."
+    fig = figure()
+    ax1 = fig.add_subplot(111)
+    ax1.plot(timeX[::hop], x[::hop], color='r')
+    
+    #plot envelope
+    #peaks = divide(peaks,peaks.max())
+    #envTime = arange(size(peaks))
+    #nvTime = divide(envTime,fs/float(hopSize))
+    #envTime.shape = peaks.shape
+    #plot(envTime,peaks);show()
+    
+    
+    eventPlot = np.zeros(size(timeX))
+    for i in range(size(events,0)):
+        eventPlot[events[i,0]:events[i,1]]=0.7
+        
+    ax1.plot(timeX[::hop],eventPlot[::hop])
+    print timeX.shape, eventPlot.shape, timeX[::hop].shape, eventPlot[::hop].shape
+    print "show..."
+    
+    show()

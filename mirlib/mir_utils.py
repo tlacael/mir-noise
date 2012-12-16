@@ -46,7 +46,7 @@ def ReadWavFile(filename):
 def HalfWaveRectify(x):
 	''' Halfwave rectify x:
 	    H(x) = (x + |x|) / 2 '''
-	return (x + np.absolute(x)) / 2
+	return (x + np.absolute(x)) / 2.
 
 def Normalize(x):
     ''' Returns x - min(x) / max(x - min(x)), operating in the last dimension '''

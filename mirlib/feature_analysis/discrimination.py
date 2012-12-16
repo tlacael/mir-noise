@@ -38,9 +38,13 @@ class discriminator:
 
     def Discriminitive_Power(self, data, classLabels):
         Sw = self.Within_Class_Scatter_Matrix(data, classLabels)
+        print Sw
+        print "SW END"
         Sb = self.Between_Class_Scatter_Matrix(data, classLabels)
+        print "SB END"
 
         J0 = np.trace(Sw) / np.trace(Sb)
+        print "J0 END"
         return J0
 
 def Disc_Power(data, k, classes):

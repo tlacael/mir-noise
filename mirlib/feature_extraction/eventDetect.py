@@ -50,8 +50,9 @@ class onsetDetect:
         xPad = concatenate([xPad, x, xPad])
         
         X = M.spectrogram(xPad, self.fftParams.N, self.fftParams.h, self.fftParams.winfunc(self.fftParams.N))
+        X = np.array(X)
 
-        return llspect.SpectralFlux(X, self.fftParams)
+        return llspect.SpectralFlux(X, self.fftParams, 1)
 
     def SmoothEnvelope(self, envelope, window_len, hop_size):
         xPad = zeros(window_len/2)
@@ -78,29 +79,33 @@ class onsetDetect:
         #set 2 second window for strong smoothing
         smoothingWinLen = self.fftParams.fs*0.5
         smoothingHopSize = smoothingWinLen/2.
-        #envelope = self.GetTimeEnvelope(x)
+        
+        #using spectral flux
+        #self.envelope = self.GetTimeEnvelope(x)
 
-        self.EnvSmooth = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
+        #using energy envelope
+        self.envelope = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
 
         # CBJ : Do we really need smoothing now? and if so, by how much? we're already
         # getting a 2048 sample value, which is about .05s. We'd only need like 10 of these
         # to get a half second of smoothing; more than that is not really useful at this stage;
         # we'd loose too much resolution on events.
-        #self.EnvSmooth = self.SmoothEnvelope(envelope, smoothingWinLen, smoothingHopSize)
-        #return envelope, self.EnvSmooth
+        #self.envelope = self.SmoothEnvelope(envelope, smoothingWinLen, smoothingHopSize)
+        #return envelope, self.envelope
         
         #normalize
-        self.EnvSmooth = divide(self.EnvSmooth, self.EnvSmooth.max()) 
-        #thresh = mean(EnvSmooth)
+        self.envelope = divide(self.envelope, self.envelope.max()) 
+        #thresh = mean(envelope)
 
         #EnvThresh = envelope           
-        EnvThresh = self.EnvSmooth   
-        thresh = median(EnvThresh)*1.4
+        EnvThresh = self.envelope   
+        thresh = 0.2#median(EnvThresh)*1.4
         
         EnvThresh[EnvThresh<thresh]=0
         
         
         EventCenters = nonzero(EnvThresh)
+   
         EventCenters = array(EventCenters)
     
         lengths = zeros((EventCenters.size,2))
@@ -165,7 +170,7 @@ class onsetDetect:
         i = 1
         
         reducedEvents[0,:] = temp[0,:]
-        while((i +offset+1) < self.numberOfEvents):
+        while((i +offset) < self.numberOfEvents):
             if temp[i+offset,0]-reducedEvents[i-1,0] <=0:
                 reducedEvents[i-1,1] = temp[i+offset,1]
                 offset+=1
@@ -176,7 +181,7 @@ class onsetDetect:
                 reducedEvents[i,:] = temp[i+offset,:]
                 i+=1
                 
-        self.reducedEvents = reducedEvents[:-offset-1,:]
+        self.reducedEvents = reducedEvents[:-offset,:]
         self.numberOfEvents = size(self.reducedEvents,0)  
             
         return self.reducedEvents
