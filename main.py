@@ -181,10 +181,13 @@ def calcJ(mfccs, classes, centroids, k):
     
         proportion = np.sum(classes==i)/float(classes.size)
         curClass = mfccs[classes==i]
+        
         if np.ndim(curClass) ==1:
             curClass.shape = (1,curClass.size)
-            covar = np.cov(curClass.T)
+            covar = np.outer(curClass,curClass)
             Sw += np.multiply(proportion,covar)
+        elif len(curClass) == 1:
+            covar = np.outer(curClass,curClass)
         else:
             covar = np.cov(curClass.T)
             Sw += np.multiply(proportion,covar)
