@@ -51,6 +51,7 @@ def getfeatures(args):
                         ('mfcc', 1, nDCTCoefs - nIndexSkip)]
     # Initialize the feature vector holder
     feature_holder = featurevector.feature_holder(vector_template, filepath)
+    envelopeHolder = []
     
     print "Feature Extraction Mode\n"
     # For each chunk of audio
@@ -60,8 +61,11 @@ def getfeatures(args):
         if debug: print "Read %d sample chunk of audio (%0.2fs)" % (len(audioChunk), len(audioChunk) / fs)
 
         # Get Events
-        eventTimes = GetEvents(audioChunk, fftParams, debug)
+        eventTimes, envelope = GetEvents(audioChunk, fftParams, debug)
         if debug: print "EVENTTIMES:", eventTimes
+        
+        envelopeHolder.append(envelope)
+        
         eventTimesSamps = np.asarray(np.multiply(eventTimes,fs),dtype=int)
 
         # Get event audio segments
@@ -82,6 +86,7 @@ def getfeatures(args):
         
     # Write features to disk
     fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
+    plt.plot(np.concatenate((envelopeHolder)));plt.show()
     print "Wrote", fileSize, "bytes to disk."
 
 def GetEvents(audiodata, fftParams, debug):
@@ -89,7 +94,7 @@ def GetEvents(audiodata, fftParams, debug):
     onsetDetector = ed.onsetDetect(fftParams)
         
     # Get Time-Segments from those offsets
-    return onsetDetector.findEventLocations(audiodata)
+    return (onsetDetector.findEventLocations(audiodata), onsetDetector.envelope)
 
 def GetEventAudioSegments(eventTimes, audiodata, debug):
     ''' eventTimes must be in samples!!! '''
