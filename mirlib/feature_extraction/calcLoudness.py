@@ -42,22 +42,22 @@ plot(timeY,sonVec, color='b');show()
 '''
 
 class SoneCalculator:
-    def __init__(self, y, fs, winLen, fftParams):
+    def __init__(self, y, fftParams):
         
         self.fftParams = fftParams
         y = array(y)
         if y.ndim == 2 and y.shape[1] == 1:
             y.shape = (y.shape[0]) 
         self.y = y;
-        self.fs = fs;
-        self.winLen = winLen
+        self.fs = fftParams.fs;
+        self.winLen = fftParams.N
 
 
     def calcSoneLoudness(self):     
-        
+
         yPad = zeros((self.winLen/2))
         yPad = concatenate((yPad, self.y, yPad),0)
-        
+
         self.yBuf = M.shingle(yPad, self.winLen, self.winLen)
         self.bufLen = size(self.yBuf, 0)
 
@@ -83,22 +83,18 @@ class SoneCalculator:
     ''' Sone measurement'''
 
     def getSegmentSone(self, i):
-        
         y = self.yBuf[i,:]
         self.ySig = y
 
         SPL_meas = 70.
-        presRef = 2e-5
+        presRef = 2.e-5
         y_scaled = divide(y, presRef)
-        y_scaled = array(y_scaled)
         RMS = sqrt(mean(square(y_scaled)))
 
         SPL = multiply(20, log10(RMS))
 
         calib = pow(10, divide(subtract(SPL_meas, SPL),20))
         y_calib = multiply(calib, y_scaled)
-        
-        
         
         self.RMS_SELF = RMS
         self.SPL_MAT = SPL_meas

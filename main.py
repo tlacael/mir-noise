@@ -21,6 +21,7 @@ import plot
 from matplotlib import pyplot as plt
 
 FEATURE_VECTOR_FILENAME = "features.npy"
+SONE_VECTOR_FILENAME = "sones.npy"
 
 def getfeatures(args):
     debug = args.debug
@@ -51,8 +52,10 @@ def getfeatures(args):
     # Template : ('name', order index, length)
     vector_template = [('sones', 0, 1),
                         ('mfcc', 1, nDCTCoefs - nIndexSkip)]
+    sone_template = [('sones', 0, 1)]
     # Initialize the feature vector holder
     feature_holder = featurevector.feature_holder(vector_template, filepath)
+    sone_holder = featurevector.feature_holder(sone_template, filepath)
     envelopeHolder = []
     sonesHolder = []
     maxEnvelope = 0;
@@ -80,22 +83,18 @@ def getfeatures(args):
         eventSegments = GetEventAudioSegments(eventTimesSamps, audioChunk, debug)
         
         #get sones
-        
-        '''
-        calcSones = cl.SoneCalculator(eventSegments, fs, 2048, fftParams)
-        eventSegmentSones = calcSones.calcSoneLoudness()
-        sonesHolder.append((eventSegmentSones, eventTimes))
-        '''
-        
+        eventSegmentSones = GetEventSones(eventSegments, fftParams, debug)
         
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
 
+        print len(eventSegmentSones), len(eventSegmentMFCCs)
+
         # Time-average for each segment / event
-        averagedEventSegmentMFCCs = AverageEventMFCCs(eventSegmentMFCCs, seglen, fftParams, debug)
+        averagedEventSegmentMFCCs, averagedEventSegmentSones = AverageEventFeatures(eventSegmentMFCCs, eventSegmentSones, seglen, fftParams, debug)
 
         # Store these vectors in the feature_holder, labelled with their time
-        StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
+        StoreFeatureVector(feature_holder, sone_holder, averagedEventSegmentMFCCs, averagedEventSegmentSones, chunkIndex, chunk_len, eventTimes, debug)
         
         if chunkIndex > 16:
             pass
@@ -103,11 +102,14 @@ def getfeatures(args):
     
     # Write features to disk
     print datetime.now()
-    envelopeWhole = np.concatenate((envelopeHolder))
-    xTime = np.divide(np.arange(len(envelopeWhole)),fs/float(hopSize))
-    #fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
-    plt.plot(xTime, np.divide(envelopeWhole, maxEnvelope));plt.show()
-    print "Wrote", fileSize, "bytes to disk."
+    
+    fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
+    print "Wrote", fileSize, "bytes to disk. (%s)" % (FEATURE_VECTOR_FILENAME)
+
+    fileSize = sone_holder.save(SONE_VECTOR_FILENAME)
+    print "Wrote", fileSize, "bytes to disk. (%s)" % (FEATURE_VECTOR_FILENAME)
+
+    
 
 def GetEvents(audiodata, fftParams, debug):
     # Get Onsets
@@ -128,7 +130,11 @@ def GetEventAudioSegments(eventTimes, audiodata, debug):
     return segments
 
 def GetEventSones(eventSegments, fftParams, debug):
-    pass
+    soneSegments = []
+    for i in np.arange(len(eventSegments)):
+        calcSones = cl.SoneCalculator(eventSegments[i], fftParams)
+        soneSegments.append(calcSones.calcSoneLoudness())
+    return soneSegments
 
 def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
     mfccSegments = []
@@ -144,42 +150,55 @@ def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
             #print "\t ",mfcc
     return mfccSegments
 
-def AverageEventMFCCs(mfccSegments, seglen, fftParams, debug):
+def AverageEventFeatures(mfccSegments, soneSegments, seglen, fftParams, debug):
     spect_fs = fftParams.fs / fftParams.h
     averaged_mfcc_segs = []
+    averaged_sone_segs = []
     for i in np.arange(len(mfccSegments)):
         averaged_segment = mir_utils.AverageFeaturesInTime(mfccSegments[i], spect_fs, seglen)
         averaged_mfcc_segs.append(averaged_segment)
-    return averaged_mfcc_segs
 
-def StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug):
+        print soneSegments[i]
+        averaged_segment = mir_utils.AverageFeaturesInTime(soneSegments[i], spect_fs, seglen)
+        averaged_sone_segs.append(averaged_segment)
+        
+    return averaged_mfcc_segs, averaged_sone_segs
+
+def StoreFeatureVector(feature_holder, sone_holder, averagedEventSegmentMFCCs, averagedEventSegmentSones, chunkIndex, chunk_len, eventTimes, debug):
     chunk_start_time = chunkIndex * chunk_len # in seconds
     for i in range(len(averagedEventSegmentMFCCs)):
         chunk_start = eventTimes[i][0]
         chunk_length = eventTimes[i][1] - eventTimes[i][0]
         timekey = (chunk_start_time + chunk_start, chunk_length)
+        thissone = averagedEventSegmentSones[i]
         thismfcc = averagedEventSegmentMFCCs[i]
         if debug:
             print "\t  Storing Vector at key:", timekey
+        print thissone.shape, thissone
+        sone_holder.add_feature('sones', thissone, timelabel=timekey)
         feature_holder.add_feature('mfcc', thismfcc, timelabel=timekey)
 
 def clustering(args):
     print "Feature Analysis/Clustering Mode: single k"
 
     feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
+    sones_holder = featurevector.feature_holder(filename=SONE_VECTOR_FILENAME)
     k = args.k
 
     print feature_holder
     mfccs = feature_holder.get_feature('mfcc')
 
+    print sones_holder
+    sones = sones_holder.get_feature('sones')
+
     print feature_holder.vector.shape
+    print sones_holder.vector.shape
     '''centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)'''
 
     centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
     print "Distortion for this run: %0.3f" % (distortion)
 
-    #classes = kmeans.vq(mfccs, centroids)
     classes,dist = kmeans.scipy_vq(mfccs, centroids)
     kmeans.print_vq_stats(mfccs, centroids)
 
@@ -188,7 +207,7 @@ def clustering(args):
     if args.write_audio_results:
         WriteAudioFromClasses(k, feature_holder, classes)
 
-    plot.plot(mfccs, eventBeginnings, centroids, classes)
+    plot.plot(mfccs, sones, eventBeginnings, centroids, classes)
     #print "J: ", calcJ(mfccs,classes, centroids,k)
 
 def calcJ(mfccs, classes, centroids, k):
