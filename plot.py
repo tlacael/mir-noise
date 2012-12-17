@@ -44,47 +44,46 @@ def plotTimeline(mfcc, eventIndecies, centroids, classes):
 
     show()
     
-def plot(mfcc, sones, eventIndecies, centroids, classes):
+def plot(mfcc, sones, eventIndecies, centroids, centroid_dist_matr, classes):
 
-    fig, (ax1, ax2, ax3, ax4) = subplots(4)
+    fig, (ax1) = subplots(1)
     fig.subplots_adjust(hspace=.5)
 
     ax1.imshow(mfcc.T, interpolation='nearest', origin='lower', aspect='auto')
-    ax1.set_title("Event Segment MFCCs")
-    ax1.title.set_size("small")
 
     eventIndYs = ones(len(eventIndecies)) * mfcc.shape[1]
     ax1.stem(eventIndecies, eventIndYs, markerfmt='k.')
-    ax1.set_xlim(0, mfcc.shape[0])
-    ax1.set_ylim(0, mfcc.shape[1])
+    ax1.set_xlim(0, mfcc.shape[0] - 1)
+    ax1.set_ylim(0, mfcc.shape[1] - 1)
+    ax1.set_title("Event Segment MFCCs")
 
-
-    ax2.plot(classes, 'x')
+    fig, (ax1) = subplots(1)
+    ax1.plot(classes, 'x')
     eventIndYs = ones(len(eventIndecies)) * classes.max() + 1
-    ax2.stem(eventIndecies, eventIndYs, markerfmt='k.')
-    ax2.set_xlim(0, len(classes))
-    ax2.set_title("Segment MFCC Class Labels")
-    ax2.title.set_size("small")
-    
-    ax3.imshow(centroids.T, interpolation='nearest', origin='lower', aspect='auto')
-    ax3.set_title("Centroids")
-    ax3.title.set_size("small")
+    ax1.stem(eventIndecies, eventIndYs, markerfmt='k.')
+    ax1.set_xlim(0, len(classes))
+    ax1.set_title("Segment MFCC Class Labels")
+
+    fig, (ax1, ax2) = subplots(2)
+    ax1.imshow(centroids.T, interpolation='nearest', origin='lower', aspect='auto')
+    ax1.set_title("Centroids")
+    ax1.title.set_size("small")
 
 
     class_id = arange(len(centroids))
     class_count = []
     for i in class_id:
         class_count.append( len((classes==i).nonzero()[0]) )
-    ax4.bar(class_id - .45, class_count, color='r', width=.9)
-    ax4.set_xlim(-.5, len(centroids) - .5)
-    ax4.set_title("Centroid Histogram")
-    ax4.title.set_size("small")
+    ax2.bar(class_id - .45, class_count, color='r', width=.9)
+    ax2.set_xlim(-.5, len(centroids) - .5)
+    ax2.set_title("Centroid Histogram")
+    ax2.title.set_size("small")
 
     fig, (ax1) = subplots(1)
     fig.subplots_adjust(hspace=.5)
 
-    inter_class_dist_matrix = mir_utils.GetSquareDistanceMatrix(centroids)
-    ax1.imshow(inter_class_dist_matrix, interpolation='nearest', origin='lower', aspect='auto')
+    
+    ax1.imshow(centroid_dist_matr, interpolation='nearest', origin='lower', aspect='auto')
     ax1.set_title("Centroid Distance Matrix")
 
     fig, (ax1) = subplots(1)

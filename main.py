@@ -88,8 +88,6 @@ def getfeatures(args):
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
 
-        print len(eventSegmentSones), len(eventSegmentMFCCs)
-
         # Time-average for each segment / event
         averagedEventSegmentMFCCs, averagedEventSegmentSones = AverageEventFeatures(eventSegmentMFCCs, eventSegmentSones, seglen, fftParams, debug)
 
@@ -158,7 +156,6 @@ def AverageEventFeatures(mfccSegments, soneSegments, seglen, fftParams, debug):
         averaged_segment = mir_utils.AverageFeaturesInTime(mfccSegments[i], spect_fs, seglen)
         averaged_mfcc_segs.append(averaged_segment)
 
-        print soneSegments[i]
         averaged_segment = mir_utils.AverageFeaturesInTime(soneSegments[i], spect_fs, seglen)
         averaged_sone_segs.append(averaged_segment)
         
@@ -174,7 +171,6 @@ def StoreFeatureVector(feature_holder, sone_holder, averagedEventSegmentMFCCs, a
         thismfcc = averagedEventSegmentMFCCs[i]
         if debug:
             print "\t  Storing Vector at key:", timekey
-        print thissone.shape, thissone
         sone_holder.add_feature('sones', thissone, timelabel=timekey)
         feature_holder.add_feature('mfcc', thismfcc, timelabel=timekey)
 
@@ -191,8 +187,6 @@ def clustering(args):
     print sones_holder
     sones = sones_holder.get_feature('sones')
 
-    print feature_holder.vector.shape
-    print sones_holder.vector.shape
     '''centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)'''
 
@@ -200,14 +194,18 @@ def clustering(args):
     print "Distortion for this run: %0.3f" % (distortion)
 
     classes,dist = kmeans.scipy_vq(mfccs, centroids)
-    kmeans.print_vq_stats(mfccs, centroids)
+    #kmeans.print_vq_stats(mfccs, centroids)
+
+    # Get the inter class dist matrix
+    inter_class_dist_matrix = mir_utils.GetSquareDistanceMatrix(centroids)
+    print inter_class_dist_matrix
 
     eventBeginnings = feature_holder.get_event_start_indecies()
-    
+    # write audio if given -w
     if args.write_audio_results:
         WriteAudioFromClasses(k, feature_holder, classes)
 
-    plot.plot(mfccs, sones, eventBeginnings, centroids, classes)
+    plot.plot(mfccs, sones, eventBeginnings, centroids, inter_class_dist_matrix, classes)
     #print "J: ", calcJ(mfccs,classes, centroids,k)
 
 def calcJ(mfccs, classes, centroids, k):
