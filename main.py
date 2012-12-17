@@ -8,12 +8,13 @@ Final Project - Feature Extraction & Clustering of Noise Data
 import argparse
 import numpy as np
 import marlib.matlab as M
-
+from datetime import datetime
 from mirlib import mir_utils
 from mirlib import featurevector
 import mirlib.audiofile as af
 import mirlib.FFTParams as fftparams
 import mirlib.feature_extraction.eventDetect as ed
+import mirlib.feature_extraction.calcLoudness as cl
 import mirlib.feature_extraction.lowlevel_spectral as llspect
 from mirlib.feature_analysis import kmeans
 import plot
@@ -52,8 +53,11 @@ def getfeatures(args):
     # Initialize the feature vector holder
     feature_holder = featurevector.feature_holder(vector_template, filepath)
     envelopeHolder = []
+    sonesHolder = []
+    maxEnvelope = 0;
     
     print "Feature Extraction Mode\n"
+    print datetime.now()
     # For each chunk of audio
     while afm.HasMoreData():
         audioChunk, chunkIndex = afm.GetNextSegment()
@@ -62,15 +66,24 @@ def getfeatures(args):
 
         # Get Events
         eventTimes, envelope = GetEvents(audioChunk, fftParams, debug)
-        if debug: print "EVENTTIMES:", eventTimes
+        if maxEnvelope < envelope.max():
+            maxEnvelope = envelope.max()
         
+        if debug: print "EVENTTIMES:", eventTimes
+                
         envelopeHolder.append(envelope)
         
         eventTimesSamps = np.asarray(np.multiply(eventTimes,fs),dtype=int)
 
         # Get event audio segments
         eventSegments = GetEventAudioSegments(eventTimesSamps, audioChunk, debug)
-
+        '''
+        #get sones
+        if
+        calcSones = cl.SoneCalculator(evenSegments, fs, 2048)
+        eventSegmentSones = calcSones.calcSoneLoudness()
+        sonesHolder.append(eventSegmentSones, eventTimes)
+        '''
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
 
@@ -85,8 +98,9 @@ def getfeatures(args):
             #break;
         
     # Write features to disk
+    print datetime.now()
     fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
-    plt.plot(np.concatenate((envelopeHolder)));plt.show()
+    plt.plot(np.divide(np.concatenate((envelopeHolder)), maxEnvelope));plt.show()
     print "Wrote", fileSize, "bytes to disk."
 
 def GetEvents(audiodata, fftParams, debug):
@@ -94,7 +108,7 @@ def GetEvents(audiodata, fftParams, debug):
     onsetDetector = ed.onsetDetect(fftParams)
         
     # Get Time-Segments from those offsets
-    return (onsetDetector.findEventLocations(audiodata), onsetDetector.envelope)
+    return (onsetDetector.findEventLocations(audiodata))
 
 def GetEventAudioSegments(eventTimes, audiodata, debug):
     ''' eventTimes must be in samples!!! '''
@@ -106,6 +120,9 @@ def GetEventAudioSegments(eventTimes, audiodata, debug):
             print "\tEvent Detected. Start: %0.2fs, End: %0.2fs, Length: %d samps" % (eventTimes[i,0], eventTimes[i,1], len(segments[i]))
 
     return segments
+
+def GetEventSones(eventSegments, fftParams, debug):
+    pass
 
 def GetEventMFCCs(eventSegments, fftParams, mfccParams, debug):
     mfccSegments = []
@@ -172,10 +189,11 @@ def calcJ(mfccs, classes, centroids, k):
     
     Sw = np.zeros((mfccs.shape[1],mfccs.shape[1]))
     Sb = np.zeros((mfccs.shape[1],mfccs.shape[1]))
+    
     for i in range(k):
         #sw
         if len(mfccs[(classes == i)]) == 0:
-            print i 
+            #print i 
             continue
     
         proportion = np.sum(classes==i)/float(classes.size)
@@ -187,6 +205,7 @@ def calcJ(mfccs, classes, centroids, k):
             Sw += np.multiply(proportion,covar)
         elif len(curClass) == 1:
             covar = np.outer(curClass,curClass)
+            Sw += np.multiply(proportion,covar)
         else:
             covar = np.cov(curClass.T)
             Sw += np.multiply(proportion,covar)
@@ -195,7 +214,7 @@ def calcJ(mfccs, classes, centroids, k):
         globalMean = np.mean(mfccs, 0)
         meanOfClass = np.mean(mfccs[classes==i],0)
         diff = meanOfClass - globalMean
-        Sb += np.outer(diff,diff)
+        Sb += np.multiply(np.outer(diff,diff), proportion)
         
     SWsumDiag = sum(np.diag(Sw))
     SBsumDiag = sum(np.diag(Sb))
@@ -203,7 +222,7 @@ def calcJ(mfccs, classes, centroids, k):
     return SBsumDiag/SWsumDiag
     
 def feature_selection(args):
-    print "Feature Analysis/Clustering Mode - featuer selection from multiple k's"
+    print "Feature Analysis/Clustering Mode - feature selection from multiple k's"
 
     feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
     kMin = args.k_min
@@ -220,7 +239,7 @@ def feature_selection(args):
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
 
-        j_measures[k-kMin] = calcJ(mfccs, classes, centroids, k)
+        j_measures[(k-kMin)/kHop] = calcJ(mfccs, classes, centroids, k)
         results.append( (k, distortion, dist) )
 
     #print [ (a) for (a,b,c) in results]

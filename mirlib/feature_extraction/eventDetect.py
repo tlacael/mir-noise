@@ -84,7 +84,8 @@ class onsetDetect:
         #self.envelope = self.GetTimeEnvelope(x)
 
         #using energy envelope
-        self.envelope = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
+        envelope = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
+
 
         # CBJ : Do we really need smoothing now? and if so, by how much? we're already
         # getting a 2048 sample value, which is about .05s. We'd only need like 10 of these
@@ -94,13 +95,12 @@ class onsetDetect:
         #return envelope, self.envelope
         
         #normalize
-        self.envelope = divide(self.envelope, self.envelope.max()) 
+        #self.envelope = divide(self.envelope, self.envelope.max()) 
         
-        #thresh = mean(envelope)
 
         #EnvThresh = envelope           
-        EnvThresh = self.envelope   
-        thresh = 0.03# median(EnvThresh)
+        EnvThresh = envelope.copy(0)   
+        thresh = 0.0007#median(EnvThresh)
 
         
         EnvThresh[EnvThresh<thresh]=0
@@ -129,11 +129,6 @@ class onsetDetect:
         
         EventCenters = array((EventCenters))
         
-        self.cents = EventCenters
-        
-        #EventCenters = array(peakTimes)
-        self.cents = EventCenters
-        
         self.numberOfEvents = EventCenters.size
         
         EventTimes = zeros((self.numberOfEvents,2))
@@ -146,7 +141,7 @@ class onsetDetect:
         
         #convert event centers to time windows in seconds
         
-        widen = 1 #amount to pad window on either side of event, in seconds
+        widen = 0.2 #amount to pad window on either side of event, in seconds
         padAdjust = 0.5
 
         for i in eventIndex:
@@ -167,10 +162,14 @@ class onsetDetect:
         temp = self.EventTimes
         
         offset =0;
-        timeThresh = 0#1*winLen/float(self.fs) #in seconds
+        timeThresh = 0.02#1*winLen/float(self.fs) #in seconds
         i = 1
         
-        reducedEvents[0,:] = temp[0,:]
+        
+        
+        if self.numberOfEvents > 0:
+            reducedEvents[0,:] = temp[0,:]
+        
         while((i +offset) < self.numberOfEvents):
             if temp[i+offset,0]-reducedEvents[i-1,0] <=0:
                 reducedEvents[i-1,1] = temp[i+offset,1]
@@ -182,10 +181,11 @@ class onsetDetect:
                 reducedEvents[i,:] = temp[i+offset,:]
                 i+=1
                 
-        self.reducedEvents = reducedEvents[:-offset,:]
-        self.numberOfEvents = size(self.reducedEvents,0)  
+        reducedEvents = reducedEvents[:-offset,:]
+        self.numberOfEvents = size(reducedEvents,0)  
+        print "number of events:", self.numberOfEvents
             
-        return self.reducedEvents
+        return (reducedEvents, envelope)
 
     '''
         #THIS CODE DOES NOT SEEM TO BE IN USE. TRUE?
