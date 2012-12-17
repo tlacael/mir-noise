@@ -1,4 +1,7 @@
 from matplotlib.pylab import *
+from mirlib import mir_utils
+
+
 
 def plot(mfcc, eventIndecies, centroids, classes):
 
@@ -38,5 +41,10 @@ def plot(mfcc, eventIndecies, centroids, classes):
     ax4.bar(class_id - .45, class_count, color='r', width=.9)
     ax4.set_xlim(-.5, len(centroids) - .5)
 
+    fig, (ax1) = subplots(1)
+    fig.subplots_adjust(hspace=.5)
+
+    inter_class_dist_matrix = mir_utils.GetSquareDistanceMatrix(centroids)
+    ax1.imshow(inter_class_dist_matrix, interpolation='nearest', aspect='auto')
 
     show()

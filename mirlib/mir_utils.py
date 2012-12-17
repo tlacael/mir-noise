@@ -8,6 +8,7 @@ from scipy import *
 import numpy as np
 import marlib.matlab as M
 import FFTParams
+import scipy.spatial.distance as dist
 
 INT16_MAX = 32768.0
 
@@ -194,3 +195,13 @@ def AverageFeaturesInTime(x, fs, segLength):
 
     return resultVector
 
+def euclid_dist(vec1, vec2):
+    if vec1.ndim == 2:
+        return np.sqrt(np.sum(np.power(np.subtract(vec1, vec2), 2), axis=1))
+    else:
+        return np.sqrt(np.sum(np.power(np.subtract(vec1, vec2), 2)))
+
+def GetSquareDistanceMatrix(x):
+    return dist.squareform(dist.pdist(x))
+
+    

@@ -159,7 +159,7 @@ def clustering(args):
     
     if args.write_audio_results:
         WriteAudioFromClasses(k, feature_holder, classes)
-    
+
     plot.plot(mfccs, eventBeginnings, centroids, classes)
     #print "J: ", calcJ(mfccs,classes, centroids,k)
 
