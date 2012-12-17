@@ -87,7 +87,7 @@ def getfeatures(args):
         sonesHolder.append((eventSegmentSones, eventTimes))
         '''
         
-        '''
+        
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
 
@@ -96,7 +96,7 @@ def getfeatures(args):
 
         # Store these vectors in the feature_holder, labelled with their time
         StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
-        '''
+        
         if chunkIndex > 16:
             pass
             #break;
