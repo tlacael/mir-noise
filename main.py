@@ -54,15 +54,19 @@ def getfeatures(args):
     # Initialize the feature vector holder
     feature_holder = featurevector.feature_holder(vector_template, filepath)
     envelopeHolder = []
+    audioHolder = []
     sonesHolder = []
     maxEnvelope = 0;
+    count =0
     
     print "Feature Extraction Mode\n"
     print datetime.now()
     # For each chunk of audio
     while afm.HasMoreData():
+        count +=1
         audioChunk, chunkIndex = afm.GetNextSegment()
-
+        
+        
         if debug: print "Read %d sample chunk of audio (%0.2fs)" % (len(audioChunk), len(audioChunk) / fs)
 
         # Get Events
@@ -81,13 +85,13 @@ def getfeatures(args):
         
         #get sones
         
-        '''
-        calcSones = cl.SoneCalculator(eventSegments, fs, 2048, fftParams)
+        
+        calcSones = cl.SoneCalculator(audioChunk, fs, 2048, fftParams)
         eventSegmentSones = calcSones.calcSoneLoudness()
         sonesHolder.append((eventSegmentSones, eventTimes))
+        
+        
         '''
-        
-        
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
 
@@ -100,11 +104,12 @@ def getfeatures(args):
         if chunkIndex > 16:
             pass
             #break;
-    
+        '''
     # Write features to disk
     print datetime.now()
+    plt.plot(np.concatenate(sonesHolder[0][:]));plt.show()
     envelopeWhole = np.concatenate((envelopeHolder))
-    xTime = np.divide(np.arange(len(envelopeWhole)),fs/float(hopSize))
+    xTime = np.divide(np.arange(len(envelopeWhole)),(fs/float(hopSize))*6.)
     #fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
     plt.plot(xTime, np.divide(envelopeWhole, maxEnvelope));plt.show()
     print "Wrote", fileSize, "bytes to disk."

@@ -6,7 +6,7 @@ import mirlib.FFTParams as fftparams
 from matplotlib.pylab import *
 
 #inputfile = '../audio_files/GV02_A_Format4min.wav'
-inputfile = '../audio_files/WB_12-15_short.wav'
+inputfile = '../audio_files/WB_12-15_342pm10mins.wav'
 
 if not os.path.exists(inputfile):
     raise Exception("FILE DOES NOT EXIST, TRY AGAIN")
@@ -14,8 +14,9 @@ if not os.path.exists(inputfile):
 [x, fs] = M.wavread(inputfile)
 
 # FFT Parameters
-N = 2048
+N = 4096
 hopDenom = 2
+hopSize = N/float(hopDenom)
 zp = 0
 winfunc=np.hamming
 fftParams = fftparams.FFTParams(fs, N, hopDenom, zp, winfunc)
@@ -52,13 +53,16 @@ if makePlot:
     #plot(envTime,peaks);show()
     
     
-    if 1:
+    if 0:
         eventPlot = np.zeros(size(timeX))
         for i in range(size(events,0)):
-            eventPlot[events[i,0]:events[i,1]]=0.7
+            envelope[events[i,0]:events[i,1]]
             
         ax1.plot(timeX[::hop],eventPlot[::hop])
         print timeX.shape, eventPlot.shape, timeX[::hop].shape, eventPlot[::hop].shape
         print "show..."
-        
+    
+    events = array(np.divide(events, hopSize),dtype=int)
+    timeEnv = np.multiply((range(size(envelope))) , (hopSize/float(fs)))
+    ax1.plot(timeEnv, envelope[events])
     show()

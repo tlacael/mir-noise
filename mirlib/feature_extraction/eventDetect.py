@@ -33,15 +33,15 @@ class onsetDetect:
         
         #creat window
         win = hanning(self.winLen)
-        self.winMat = tile(win, (featureLen, 1))
+        winMat = tile(win, (featureLen, 1))
         
         #window buffers
-        self.xBuf = xBuf * win
+        xBuf = xBuf * win
         
         #square and mean
-        self.xLocEnrg = mean(square(self.xBuf),1)
+        xLocEnrg = mean(square(xBuf),1)
         
-        return self.xLocEnrg
+        return xLocEnrg
     
     def GetTimeEnvelope(self, x):
         
@@ -162,7 +162,7 @@ class onsetDetect:
         temp = self.EventTimes
         
         offset =0;
-        timeThresh = 0.02#1*winLen/float(self.fs) #in seconds
+        timeThresh = 0.4#1*winLen/float(self.fs) #in seconds
         i = 1
         
         

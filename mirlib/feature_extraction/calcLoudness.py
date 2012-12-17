@@ -68,8 +68,7 @@ class SoneCalculator:
             self.count +=1
             soneVec[i] = self.getSegmentSone(i)
 
-        self.S = soneVec
-        
+
         #gate signal
         E = ED.onsetDetect(self.fftParams)
         envelope = E.envelopeFollow(self.y, self.winLen*2, self.winLen)
@@ -86,11 +85,12 @@ class SoneCalculator:
         
         y = self.yBuf[i,:]
         self.ySig = y
+        
 
         SPL_meas = 70.
         presRef = 2e-5
         y_scaled = divide(y, presRef)
-        y_scaled = array(y_scaled)
+        
         RMS = sqrt(mean(square(y_scaled)))
 
         SPL = multiply(20, log10(RMS))
@@ -99,17 +99,10 @@ class SoneCalculator:
         y_calib = multiply(calib, y_scaled)
         
         
-        
-        self.RMS_SELF = RMS
-        self.SPL_MAT = SPL_meas
-        self.CALIB = calib
-        self.YSCALED = y_scaled
-        self.yCalib = y_calib
-        
         '''direct method of calculating sone'''
         
         '''set params '''
-        NFFT = 1024#self.winLen
+        NFFT = self.winLen
         ''' barks one to 18'''
     
         barkFreqs = range(1,19)    
