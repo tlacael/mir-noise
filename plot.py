@@ -45,6 +45,6 @@ def plot(mfcc, eventIndecies, centroids, classes):
     fig.subplots_adjust(hspace=.5)
 
     inter_class_dist_matrix = mir_utils.GetSquareDistanceMatrix(centroids)
-    ax1.imshow(inter_class_dist_matrix, interpolation='nearest', aspect='auto')
+    ax1.imshow(inter_class_dist_matrix, interpolation='nearest', origin='lower', aspect='auto')
 
     show()
