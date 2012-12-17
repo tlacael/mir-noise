@@ -24,9 +24,12 @@ fftParams = fftparams.FFTParams(fs, N, hopDenom, zp, winfunc)
 z = ed.onsetDetect(fftParams)
 
 
-events = z.findEventLocations(x)
+events, envelope = z.findEventLocations(x)
+
+
 
 makePlot = 1
+
 
 if makePlot:
     events = np.multiply(events,fs)
@@ -49,12 +52,13 @@ if makePlot:
     #plot(envTime,peaks);show()
     
     
-    eventPlot = np.zeros(size(timeX))
-    for i in range(size(events,0)):
-        eventPlot[events[i,0]:events[i,1]]=0.7
+    if 1:
+        eventPlot = np.zeros(size(timeX))
+        for i in range(size(events,0)):
+            eventPlot[events[i,0]:events[i,1]]=0.7
+            
+        ax1.plot(timeX[::hop],eventPlot[::hop])
+        print timeX.shape, eventPlot.shape, timeX[::hop].shape, eventPlot[::hop].shape
+        print "show..."
         
-    ax1.plot(timeX[::hop],eventPlot[::hop])
-    print timeX.shape, eventPlot.shape, timeX[::hop].shape, eventPlot[::hop].shape
-    print "show..."
-    
     show()
