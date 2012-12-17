@@ -59,7 +59,7 @@ def segment_audio_files(filepath, segment_length, result_dir=RESULT_DIR):
 def get_arbitrary_file_segments(readfilepath, segmentList):
     ''' filepath contains the input files
     segment list is a list of (start point, length), in seconds '''
-    print "reading", segmentList, "from", readfilepath
+    #print "reading", segmentList, "from", readfilepath
 
     afReader = af.AudioReader(readfilepath)
     fs = afReader.samplerate()

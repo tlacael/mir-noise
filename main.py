@@ -105,7 +105,7 @@ def getfeatures(args):
     print "Wrote", fileSize, "bytes to disk. (%s)" % (FEATURE_VECTOR_FILENAME)
 
     fileSize = sone_holder.save(SONE_VECTOR_FILENAME)
-    print "Wrote", fileSize, "bytes to disk. (%s)" % (FEATURE_VECTOR_FILENAME)
+    print "Wrote", fileSize, "bytes to disk. (%s)" % (SONE_VECTOR_FILENAME)
 
     
 
@@ -198,7 +198,7 @@ def clustering(args):
 
     # Get the inter class dist matrix
     inter_class_dist_matrix = mir_utils.GetSquareDistanceMatrix(centroids)
-    print inter_class_dist_matrix
+    #print inter_class_dist_matrix
 
     eventBeginnings = feature_holder.get_event_start_indecies()
     # write audio if given -w
@@ -254,24 +254,24 @@ def feature_selection(args):
     kHop = args.k_hop
 
     mfccs = feature_holder.get_feature('mfcc')
+    nmfcc = len(mfccs)
+    print "N MFCCS:", nmfcc
 
     results = []
-    j_measures = np.zeros(kMax- kMin)
-    
     for k in range(kMin, kMax, kHop):
+        print "Running k-Means with k=%d" % (k)
+
+        if k >= nmfcc:
+            print "WARNING! k is greater than the number of samples!"
+        
         centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
 
-        j_measures[(k-kMin)/kHop] = calcJ(mfccs, classes, centroids, k)
-        results.append( (k, distortion, dist) )
+        J0 = calcJ(mfccs, classes, centroids, k)
+        results.append( (k, distortion, dist, J0) )
 
-    #print [ (a) for (a,b,c) in results]
-
-    print "jMeasures", j_measures
-    plt.close()
-    plt.plot(j_measures);plt.show()
-    #print [ (a, b) for (a,b,c) in results]
+    plot.plot_feature_selection(kMin, kMax, kHop, results)
     
 def WriteAudioFromClasses(k, feature_holder, classes):
     index_time_map = feature_holder.get_index_time_map()
@@ -283,7 +283,7 @@ def WriteAudioFromClasses(k, feature_holder, classes):
         # Find all time segments that go with this class
         timeSegments = [ index_time_map[j] for j  in sorted(segment_classes[i])]
 
-        print timeSegments
+        #print timeSegments
         # Write all these time segments to a single file
         audioSegments, fs = af.get_arbitrary_file_segments(feature_holder.filename, timeSegments)
         resultDir = './results'

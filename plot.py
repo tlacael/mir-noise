@@ -1,7 +1,18 @@
 from matplotlib.pylab import *
 from mirlib import mir_utils
 
+def plot_feature_selection(kMin, kMax, kHop, results):
 
+    k = [ (a) for (a,b,c,d) in results]
+    J0 = [ (d) for (a,b,c,d) in results]
+
+    fig, (ax1) = subplots(1)
+    ax1.plot(k, J0)
+    ax1.set_title("J0 Feature Selection for k:[%d:%d:%d]" % (kMin, kMax, kHop))
+    ax1.set_xlim(min(k), max(k))
+    ax1.set_ylim(min(J0), max(J0))
+
+    show()
 
 def plotTimeline(mfcc, eventIndecies, centroids, classes):
 
