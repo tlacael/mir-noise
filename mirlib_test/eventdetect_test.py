@@ -6,7 +6,7 @@ import mirlib.FFTParams as fftparams
 from matplotlib.pylab import *
 
 #inputfile = '../audio_files/GV02_A_Format4min.wav'
-inputfile = '../audio_files/wburgShort.wav'
+inputfile = '../audio_files/WB_12-15_short.wav'
 
 if not os.path.exists(inputfile):
     raise Exception("FILE DOES NOT EXIST, TRY AGAIN")

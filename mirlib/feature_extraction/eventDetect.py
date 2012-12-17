@@ -95,14 +95,15 @@ class onsetDetect:
         
         #normalize
         self.envelope = divide(self.envelope, self.envelope.max()) 
+        
         #thresh = mean(envelope)
 
         #EnvThresh = envelope           
         EnvThresh = self.envelope   
-        thresh = 0.2#median(EnvThresh)*1.4
+        thresh = 0.03# median(EnvThresh)
+
         
         EnvThresh[EnvThresh<thresh]=0
-        
         
         EventCenters = nonzero(EnvThresh)
    

@@ -161,25 +161,34 @@ def clustering(args):
         WriteAudioFromClasses(k, feature_holder, classes)
     
     plot.plot(mfccs, eventBeginnings, centroids, classes)
-    print "J: ", calcJ(mfccs,classes, centroids,k)
+    #print "J: ", calcJ(mfccs,classes, centroids,k)
 
 def calcJ(mfccs, classes, centroids, k):
     
-    Sw = np.ones((mfccs.shape[1],mfccs.shape[1]))
-    Sb = np.ones((mfccs.shape[1],mfccs.shape[1]))
-    
+    Sw = np.zeros((mfccs.shape[1],mfccs.shape[1]))
+    Sb = np.zeros((mfccs.shape[1],mfccs.shape[1]))
     for i in range(k):
         #sw
+        if len(mfccs[(classes == i)]) == 0:
+            print i 
+            continue
+    
         proportion = np.sum(classes==i)/float(classes.size)
-        covar = np.cov(mfccs[classes==0], rowvar=0)
-        Sw += np.multiply(proportion,covar)
-        
+        curClass = mfccs[classes==i]
+        if np.ndim(curClass) ==1:
+            curClass.shape = (1,curClass.size)
+            covar = np.cov(curClass.T)
+            Sw += np.multiply(proportion,covar)
+        else:
+            covar = np.cov(curClass.T)
+            Sw += np.multiply(proportion,covar)
+
         #Sb
         globalMean = np.mean(mfccs, 0)
         meanOfClass = np.mean(mfccs[classes==i],0)
         diff = meanOfClass - globalMean
         Sb += np.outer(diff,diff)
-        
+
     SWsumDiag = sum(np.diag(Sw))
     SBsumDiag = sum(np.diag(Sb))
 
