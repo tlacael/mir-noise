@@ -187,10 +187,10 @@ class onsetDetect:
             
         return (reducedEvents, envelope)
 
-    '''
-        #THIS CODE DOES NOT SEEM TO BE IN USE. TRUE?
+    
+
         
-    def envelopeFollow(self, winLen, hopSize):
+    def envelopeFollow(self, x, winLen, hopSize):
         self.winLen = winLen
         self.hopSize = hopSize
     
@@ -215,7 +215,10 @@ class onsetDetect:
         self.xEnvelope = mean(abs(self.xBuf),1)
         
         return self.xEnvelope
+    
+    #THIS CODE DOES NOT SEEM TO BE IN USE. TRUE?
 
+    '''
     def logDeriv(self):
 
         xLogDeriv = zeros(size(self.xLocEnrg))

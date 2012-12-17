@@ -33,6 +33,7 @@ def getfeatures(args):
     fs = afm.afReader.samplerate()
     N = 2048
     hopDenom = 2
+    hopSize = N/hopDenom
     zp = 0
     winfunc=np.hamming
     fftParams = fftparams.FFTParams(fs, N, hopDenom, zp, winfunc)
@@ -77,12 +78,15 @@ def getfeatures(args):
 
         # Get event audio segments
         eventSegments = GetEventAudioSegments(eventTimesSamps, audioChunk, debug)
-        '''
+        
         #get sones
-        if
-        calcSones = cl.SoneCalculator(evenSegments, fs, 2048)
+        
+        '''
+        calcSones = cl.SoneCalculator(eventSegments, fs, 2048, fftParams)
         eventSegmentSones = calcSones.calcSoneLoudness()
-        sonesHolder.append(eventSegmentSones, eventTimes)
+        sonesHolder.append((eventSegmentSones, eventTimes))
+        '''
+        
         '''
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
@@ -92,15 +96,17 @@ def getfeatures(args):
 
         # Store these vectors in the feature_holder, labelled with their time
         StoreFeatureVector(feature_holder, averagedEventSegmentMFCCs, chunkIndex, chunk_len, eventTimes, debug)
-
+        '''
         if chunkIndex > 16:
             pass
             #break;
-        
+    
     # Write features to disk
     print datetime.now()
-    fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
-    plt.plot(np.divide(np.concatenate((envelopeHolder)), maxEnvelope));plt.show()
+    envelopeWhole = np.concatenate((envelopeHolder))
+    xTime = np.divide(np.arange(len(envelopeWhole)),fs/float(hopSize))
+    #fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
+    plt.plot(xTime, np.divide(envelopeWhole, maxEnvelope));plt.show()
     print "Wrote", fileSize, "bytes to disk."
 
 def GetEvents(audiodata, fftParams, debug):

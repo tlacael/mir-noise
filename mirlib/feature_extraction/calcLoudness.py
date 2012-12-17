@@ -42,9 +42,10 @@ plot(timeY,sonVec, color='b');show()
 '''
 
 class SoneCalculator:
-    def __init__(self, y, fs, winLen=1024):
+    def __init__(self, y, fs, winLen, fftParams):
         
-                
+        self.fftParams = fftParams
+        y = array(y)
         if y.ndim == 2 and y.shape[1] == 1:
             y.shape = (y.shape[0]) 
         self.y = y;
@@ -70,8 +71,8 @@ class SoneCalculator:
         self.S = soneVec
         
         #gate signal
-        E = ED.onsetDetect(self.y, self.fs)
-        envelope = E.envelopeFollow(self.winLen*2, self.winLen)
+        E = ED.onsetDetect(self.fftParams)
+        envelope = E.envelopeFollow(self.y, self.winLen*2, self.winLen)
         envelope = divide(envelope,envelope.max())
         
         soneVec = soneVec * envelope
@@ -89,6 +90,7 @@ class SoneCalculator:
         SPL_meas = 70.
         presRef = 2e-5
         y_scaled = divide(y, presRef)
+        y_scaled = array(y_scaled)
         RMS = sqrt(mean(square(y_scaled)))
 
         SPL = multiply(20, log10(RMS))
