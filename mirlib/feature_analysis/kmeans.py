@@ -1,12 +1,6 @@
 import numpy as np
-from scipy.spatial.distance import euclidean
+from .. import mir_utils
 import scipy.cluster.vq
-
-def euclid_dist(vec1, vec2):
-    if vec1.ndim == 2:
-        return np.sqrt(np.sum(np.power(np.subtract(vec1, vec2), 2), axis=1))
-    else:
-        return np.sqrt(np.sum(np.power(np.subtract(vec1, vec2), 2)))
 
 def GetNearestCentroids(data, centroids):
     # Use Euclidean Distance to get the nearest centroids for each point
@@ -18,7 +12,7 @@ def GetNearestCentroids(data, centroids):
     dist = np.zeros([k, nDim]) # the dist matrix for each centroid
         
     for i in range(k):
-        dist[i] = euclid_dist(data, centroids[i])
+        dist[i] = mir_utils.euclid_dist(data, centroids[i])
 
     return dist.argmin(axis=0)
 

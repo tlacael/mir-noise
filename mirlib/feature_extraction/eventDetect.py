@@ -141,7 +141,7 @@ class onsetDetect:
         
         #convert event centers to time windows in seconds
         
-        widen = 0.2 #amount to pad window on either side of event, in seconds
+        widen = 1 #amount to pad window on either side of event, in seconds
         padAdjust = 0.5
 
         for i in eventIndex:
