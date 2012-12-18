@@ -1,3 +1,10 @@
+'''
+@author: Christopher Jacoby
+
+classes for storing and passing FFT parameters
+
+'''
+
 import numpy as np
 
 class FFTParams:

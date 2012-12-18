@@ -1,3 +1,9 @@
+''' @author Christopher Jacoby
+featurevector.py contains the feature_holder class, which is used for managing datasets, including saving and loading them.
+
+See associated featvect_test.py in the tests folder for unit tests of this code.
+'''
+
 import numpy as np
 import os
 

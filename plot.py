@@ -1,3 +1,9 @@
+'''
+@author: Christopher Jacoby and Tlacael Esparza
+plot.py - 
+All relevant plotting routines are contained here. All called from main.py
+'''
+
 from matplotlib.pylab import *
 from mirlib import mir_utils
 
@@ -26,7 +32,7 @@ def plotTimeline(mfcc, eventIndecies, centroids, classes):
     print "Plot classes"
 
     eventIndYs = ones(len(eventIndecies)) * mfcc.shape[1]
-    ax1.stem(eventIndecies, eventIndYs, markerfmt='k.')
+    ax1.stem(eventIndecies, eventIndYs, markerfmt='k.')au
     ax1.set_xlim(0, mfcc.shape[0])
     ax1.set_ylim(0, mfcc.shape[1])
 

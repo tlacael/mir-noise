@@ -59,6 +59,8 @@ def Cepstrum(X, cepstrumParams):
 def MFCC(X, mfccParams, fftParams):
     ''' Take the MFCC of X, return the matrix of Cepstrum coeficients. 
     X is the 2d spectrogram (FFT frames)
+
+    taken from Juan's MIR notes.
     '''
     X = np.array(X)  
     nFrames = X.shape[0]

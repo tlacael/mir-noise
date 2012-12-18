@@ -1,9 +1,13 @@
 ''' MIR Final Project - City Sounds Categorization
-Author Tlacael Esparza'''
+@Author Tlacael Esparza
 
-''' Class to calculate loudness vector of signal with window winLen
+Class to calculate loudness vector of signal with window winLen
 arguments are filename of wav audio to be analyzed and analysis window size
-usage: soneVec = calcLoudness(filename, winLength)'''
+usage: soneVec = calcLoudness(filename, winLength)
+
+From this paper:
+Wonho, Y., Enhanced modified bark spectral distortion (EMBSD):An objective speech quality measure based on audible distortion and cognition model, Ph.D. thesis, Temple University, Ft. Washington, USA, 1999.
+'''
 
 
 from numpy import *
