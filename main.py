@@ -87,18 +87,9 @@ def getfeatures(args):
         eventSegments = GetEventAudioSegments(eventTimesSamps, audioChunk, debug)
         
         #get sones
-<<<<<<< HEAD
         
-        
-        calcSones = cl.SoneCalculator(audioChunk, fs, 2048, fftParams)
-        eventSegmentSones = calcSones.calcSoneLoudness()
-        sonesHolder.append((eventSegmentSones, eventTimes))
-        
-=======
         eventSegmentSones = GetEventSones(eventSegments, fftParams, debug)
->>>>>>> b345dbf56249158ffc07f5c7d77f7fed8439a47c
         
-        '''
         # Get the MFCCs for each segment / event
         eventSegmentMFCCs = GetEventMFCCs(eventSegments, fftParams, mfccParams, debug)
 
@@ -111,17 +102,8 @@ def getfeatures(args):
         if chunkIndex > 16:
             pass
             #break;
-        '''
     # Write features to disk
     print datetime.now()
-<<<<<<< HEAD
-    plt.plot(np.concatenate(sonesHolder[0][:]));plt.show()
-    envelopeWhole = np.concatenate((envelopeHolder))
-    xTime = np.divide(np.arange(len(envelopeWhole)),(fs/float(hopSize))*6.)
-    #fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
-    plt.plot(xTime, np.divide(envelopeWhole, maxEnvelope));plt.show()
-    print "Wrote", fileSize, "bytes to disk."
-=======
     
     fileSize = feature_holder.save(FEATURE_VECTOR_FILENAME)
     print "Wrote", fileSize, "bytes to disk. (%s)" % (FEATURE_VECTOR_FILENAME)
@@ -130,8 +112,6 @@ def getfeatures(args):
     print "Wrote", fileSize, "bytes to disk. (%s)" % (FEATURE_VECTOR_FILENAME)
 
     
->>>>>>> b345dbf56249158ffc07f5c7d77f7fed8439a47c
-
 def GetEvents(audiodata, fftParams, debug):
     # Get Onsets
     onsetDetector = ed.onsetDetect(fftParams)
@@ -213,7 +193,7 @@ def clustering(args):
     '''centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)'''
 
-    centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
+    centroids, distortion = Get_Best_Centroids(k, 1)
     print "Distortion for this run: %0.3f" % (distortion)
 
     classes,dist = kmeans.scipy_vq(mfccs, centroids)
@@ -225,11 +205,13 @@ def clustering(args):
 
     eventBeginnings = feature_holder.get_event_start_indecies()
     # write audio if given -w
+    if args.plot_segments:
+        PlotWaveformWClasses(k, feature_holder,classes)
     if args.write_audio_results:
         WriteAudioFromClasses(k, feature_holder, classes)
 
     plot.plot(mfccs, sones, eventBeginnings, centroids, inter_class_dist_matrix, classes)
-    #print "J: ", calcJ(mfccs,classes, centroids,k)
+    print "J: ", calcJ(mfccs,classes, centroids,k)
 
 def calcJ(mfccs, classes, centroids, k):
     
@@ -296,6 +278,63 @@ def feature_selection(args):
     plt.plot(j_measures);plt.show()
     #print [ (a, b) for (a,b,c) in results]
     
+def Get_Best_Centroids(k, iterations):
+    print "Feature Analysis/Clustering Mode - feature selection from multiple k's"
+
+    feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
+    
+    mfccs = feature_holder.get_feature('mfcc')
+
+    j_measures = np.zeros(iterations)
+    max = 0;
+    bestCentroids = 0
+    bestDistortion = 0
+    
+    for i in range(iterations):
+        centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
+
+        classes, dist = kmeans.scipy_vq(mfccs, centroids)
+
+        j_measures[i] = calcJ(mfccs, classes, centroids, k)
+
+        if j_measures[i] > max:
+            max = j_measures[i]
+            bestCentroids = centroids
+            bestDistortion = distortion
+
+    return bestCentroids, bestDistortion
+    
+def PlotWaveformWClasses(k, feature_holder, classes):
+    index_time_map = feature_holder.get_index_time_map()
+    print "Original File:", feature_holder.filename
+
+    
+    # for each class k
+    events = np.zeros((60*6*44100,1))
+    segment_classes = GetClassFromSegment(k, index_time_map, classes)
+    for i in sorted(segment_classes.keys()):
+        # Find all time segments that go with this class
+        timeSegments = [ index_time_map[j] for j  in sorted(segment_classes[i])]
+        
+        
+        
+        # Write all these time segments to a single file
+        audioSegments, fs = af.get_arbitrary_file_segments(feature_holder.filename, timeSegments)
+        
+        for j in range(len(timeSegments)):
+            print j, timeSegments[j]
+            if (timeSegments[j][0]+timeSegments[j][1]) < 60*6:
+                
+                startIndex = int(timeSegments[j][0]*fs)
+                endIndex = int(float(timeSegments[j][0]+timeSegments[j][1])*fs)
+                
+                diff = len(audioSegments[j])-len(events[startIndex:endIndex])
+                events[startIndex:endIndex+diff] = audioSegments[j]
+                
+    plt.plot(events[::100]);plt.show()
+    
+        
+    
 def WriteAudioFromClasses(k, feature_holder, classes):
     index_time_map = feature_holder.get_index_time_map()
     print "Original File:", feature_holder.filename
@@ -352,6 +391,7 @@ def ParseArgs():
     parser_clustering = subparsers.add_parser("clustering", help="Feature Analysis Mode")
     parser_clustering.add_argument("k", help="Number of classes", type=int)
     parser_clustering.add_argument("-w", "--write_audio_results", help="Write audio from clusters", action="store_true")
+    parser_clustering.add_argument("-plot", "--plot_segments", help="Plot audio segment classes", action="store_true")
     parser_clustering.set_defaults(func=clustering)
     
 
