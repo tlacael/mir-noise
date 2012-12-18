@@ -32,7 +32,7 @@ def plotTimeline(mfcc, eventIndecies, centroids, classes):
     print "Plot classes"
 
     eventIndYs = ones(len(eventIndecies)) * mfcc.shape[1]
-    ax1.stem(eventIndecies, eventIndYs, markerfmt='k.')au
+    ax1.stem(eventIndecies, eventIndYs, markerfmt='k.')
     ax1.set_xlim(0, mfcc.shape[0])
     ax1.set_ylim(0, mfcc.shape[1])
 
