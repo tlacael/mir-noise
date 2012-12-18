@@ -102,9 +102,11 @@ def plot(mfcc, sones, eventIndecies, centroids, centroid_dist_matr, classes):
     
     ax1.imshow(centroid_dist_matr, interpolation='nearest', origin='lower', aspect='auto')
     ax1.set_title("Centroid Distance Matrix")
+    ax1.set_xlabel("Seconds")
 
+    '''
     fig, (ax1) = subplots(1)
     ax1.plot(sones)
     ax1.set_title("Segment Sones")
-
+    '''
     show()
