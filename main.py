@@ -193,7 +193,9 @@ def clustering(args):
     '''centroids, nItr = kmeans.kmeans(mfccs, k, thresh)
     print "k-Means with k=%d run in %d iterations." % (k, nItr)'''
 
-    centroids, distortion = Get_Best_Centroids(k, 1)
+    centroids, distortion = Get_Best_Centroids(k, 40)
+
+    
     print "Distortion for this run: %0.3f" % (distortion)
 
     classes,dist = kmeans.scipy_vq(mfccs, centroids)
@@ -264,7 +266,7 @@ def feature_selection(args):
     j_measures = np.zeros(kMax- kMin)
     
     for k in range(kMin, kMax, kHop):
-        centroids, distortion = kmeans.scipy_kmeans(mfccs, k)
+        centroids, distortion = Get_Best_Centroids(k,20)
 
         classes, dist = kmeans.scipy_vq(mfccs, centroids)
 
@@ -279,7 +281,6 @@ def feature_selection(args):
     #print [ (a, b) for (a,b,c) in results]
     
 def Get_Best_Centroids(k, iterations):
-    print "Feature Analysis/Clustering Mode - feature selection from multiple k's"
 
     feature_holder = featurevector.feature_holder(filename=FEATURE_VECTOR_FILENAME)
     
@@ -302,6 +303,15 @@ def Get_Best_Centroids(k, iterations):
             bestCentroids = centroids
             bestDistortion = distortion
 
+    '''
+    plt.close()
+    fig, (ax1) = plt.subplots(1)
+    ax1.plot(j_measures)
+    ax1.set_title("J measures over multiple iterations of k")
+    ax1.set_xlabel("iterations")
+    ax1.set_ylabel("J-measure values")
+    plt.show()
+    '''
     return bestCentroids, bestDistortion
     
 def PlotWaveformWClasses(k, feature_holder, classes):
