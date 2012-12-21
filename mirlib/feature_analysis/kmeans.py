@@ -1,3 +1,14 @@
+''' @author Christopher Jacoby
+
+algorithms for implementing k-means.
+
+In the end... so far we just use the scipy versions, because these 
+are returning weird errors in low-level numpy for large k that I
+can't seem to find the cause of.
+
+Tests located in the mirlib_test folder.
+'''
+
 import numpy as np
 from .. import mir_utils
 import scipy.cluster.vq

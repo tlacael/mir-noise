@@ -1,7 +1,7 @@
 '''
 @author: Christopher Jacoby
 
-misc functions that aren't anywhere else for generic mir things.
+misc functions that don't belong anywhere else for generic mir things.
 '''
 
 from scipy import *
@@ -50,7 +50,10 @@ def HalfWaveRectify(x):
 	return (x + np.absolute(x)) / 2.
 
 def Normalize(x):
-    ''' Returns x - min(x) / max(x - min(x)), operating in the last dimension '''
+    ''' Returns x - min(x) / max(x - min(x)), operating in the last dimension 
+
+    This function is NOT BEHAVING CORRECTLY yet, so please use Normalize2 until further notice.
+    '''
     xAbs = abs(x)
     ax = np.asarray(xAbs, dtype=float)
     opAxis = len(ax.shape) - 1

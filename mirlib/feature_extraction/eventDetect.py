@@ -1,7 +1,8 @@
-''' @author: Tlacael Esparza'''
-''' script analyzes wav audio and detects events 
+''' @author: Tlacael Esparza
+script analyzes wav audio and detects events 
 with novelty function, returns index with beginning and ending time markings 
-for identified event'''
+for identified event
+'''
 
 
 from numpy import *
@@ -80,29 +81,13 @@ class onsetDetect:
         smoothingWinLen = self.fftParams.fs*0.5
         smoothingHopSize = smoothingWinLen/2.
         
-        #using spectral flux
-        #self.envelope = self.GetTimeEnvelope(x)
-
         #using energy envelope
         envelope = self.envelopeFollowEnergy(x, smoothingWinLen, smoothingHopSize)
-
-
-        # CBJ : Do we really need smoothing now? and if so, by how much? we're already
-        # getting a 2048 sample value, which is about .05s. We'd only need like 10 of these
-        # to get a half second of smoothing; more than that is not really useful at this stage;
-        # we'd loose too much resolution on events.
-        #self.envelope = self.SmoothEnvelope(envelope, smoothingWinLen, smoothingHopSize)
-        #return envelope, self.envelope
-        
-        #normalize
-        #self.envelope = divide(self.envelope, self.envelope.max()) 
-        
 
         #EnvThresh = envelope           
         EnvThresh = envelope.copy(0)   
         thresh = 0.0007#median(EnvThresh)
 
-        
         EnvThresh[EnvThresh<thresh]=0
         
         EventCenters = nonzero(EnvThresh)
@@ -112,20 +97,6 @@ class onsetDetect:
         lengths = zeros((EventCenters.size,2))
         count = 0
 
-        
-        #len=0  # len is probably not a good name for a variable, since it's a built-in function
-        
-        '''
-        for sample in arange(EnvThresh.size):
-            while(EnvThresh[sample]!= 0):
-                len+=1
-            lengths[count] = (len,sample-len)
-            if len >0:
-                count+=1
-                len=0
-        self.lengths = lengths
-        
-        '''
         
         EventCenters = array((EventCenters))
         
@@ -165,8 +136,6 @@ class onsetDetect:
         timeThresh = 0.4#1*winLen/float(self.fs) #in seconds
         i = 1
         
-        
-        
         if self.numberOfEvents > 0:
             reducedEvents[0,:] = temp[0,:]
         
@@ -187,9 +156,6 @@ class onsetDetect:
             
         return (reducedEvents, envelope)
 
-    
-
-        
     def envelopeFollow(self, x, winLen, hopSize):
         self.winLen = winLen
         self.hopSize = hopSize
@@ -216,23 +182,6 @@ class onsetDetect:
         
         return self.xEnvelope
     
-    #THIS CODE DOES NOT SEEM TO BE IN USE. TRUE?
-
-    '''
-    def logDeriv(self):
-
-        xLogDeriv = zeros(size(self.xLocEnrg))
-        
-        xLogDeriv[0:-1] = log(self.xLocEnrg[1:]) - log(self.xLocEnrg[0:-1])
-        xLogDeriv[-1] = 0
-        
-        xLogDeriv[abs(self.xLocEnrg) < mean(abs(self.xLocEnrg))] = 0
-         
-        self.xLogDeriv = xLogDeriv
-        
-        return self.xLogDeriv
-'''    
-        
         
 ''' Test script
 # load in audio to be analyzed

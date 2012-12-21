@@ -1,3 +1,10 @@
+'''
+@author Christopher Jacoby
+
+Routines for handling high level audio file management.
+'''
+
+
 import os
 import glob
 import marlib.audiofile as af
@@ -18,6 +25,8 @@ def cleandir(dir):
             os.remove(f)
 
 class audiofile_manager:
+    ''' Class for loading large audio files in small chunks. '''
+    
     def __init__(self, filepath, segment_length):
         self.filepath = filepath
         self.filename = os.path.split(filepath)[1]
@@ -27,9 +36,12 @@ class audiofile_manager:
         self.seg_length_samps = int(np.round(segment_length * self.afReader.samplerate()))
 
     def HasMoreData(self):
+        ''' Returns true if there are more segments available in the audio file '''
         return (self.index * self.seg_length_samps) < self.afReader.numsamples()
 
     def GetNextSegment(self, bMono=True):
+        ''' Returns the samples for the next available audio segment.
+        bMono=false returns it as a (N,2) shape, bMono=true returns it as (N)'''
         segment = self.afReader.read_frame_at_index(self.index * self.seg_length_samps, self.seg_length_samps)
         self.index += 1
 
@@ -40,6 +52,11 @@ class audiofile_manager:
 
 
 def segment_audio_files(filepath, segment_length, result_dir=RESULT_DIR):
+    ''' From an input audio file, segments the file into segments of length segment_length, and outputs them as individual files to result_dir
+    Parameters:
+       filepath - the path to the input file
+       segment_length - the length of the segment to return, in seconds
+       result_dir - output path to write to '''
     filename = os.path.split(filepath)[1]
     afm = audiofile_manager(filepath, segment_length)
 
@@ -58,8 +75,10 @@ def segment_audio_files(filepath, segment_length, result_dir=RESULT_DIR):
 
 def get_arbitrary_file_segments(readfilepath, segmentList):
     ''' filepath contains the input files
-    segment list is a list of (start point, length), in seconds '''
-    print "reading", segmentList, "from", readfilepath
+    segment list is a list of (start point, length), in seconds 
+
+    returns: a list of audio samples for each segment, fs for the read file'''
+    #print "reading", segmentList, "from", readfilepath
 
     afReader = af.AudioReader(readfilepath)
     fs = afReader.samplerate()
@@ -71,6 +90,8 @@ def get_arbitrary_file_segments(readfilepath, segmentList):
     return audio_segments, fs
 
 def write_segment_audio(writefilepath, audioSegments, fs):
+    ''' given an output path, and a list of audio segments, 
+    concatenate them into a single file, with blank space between each. '''
     print "Writing", len(audioSegments), "audio segments to", writefilepath
 
     fileDir = os.path.dirname(writefilepath)
